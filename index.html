@@ -132,7 +132,10 @@
 <div id="dtw" role="alertdialog" aria-live="assertive" hidden><div class="card" style="text-align:center"><h2>Developer tools detected</h2><p>Please close developer tools to keep playing Starfall.</p></div></div>
 <div id="news" role="dialog" aria-modal="true" aria-labelledby="nTitle" hidden>
   <div class="card" id="nCard" tabindex="-1">
-    <h2 id="nTitle">What's new: WW2 Update</h2>
+    <h2 id="nTitle">What's new: Story Mode</h2>
+    <h3>Wings of War</h3>
+    <ul><li>New Story Mode: 11 chapters following the Whitaker family from 1916 to 1965, from biplanes to Spitfires to the jet age</li><li>Find it in Game Modes. It has its own progress, separate from the Campaign</li></ul>
+    <h3>WW2 update</h3>
     <h3>Warbird jets</h3>
     <ul><li>Four WW2 fighters: Spitfire, Bf 109, A6M Zero and the P-51 Mustang</li><li>Find them in the new Warbird Pack (2,200 coins). The Mustang is a 6% pull</li></ul>
     <h3>Air War and campaign</h3>
@@ -140,7 +143,7 @@
     <h3>Hangar</h3>
     <ul><li>Longer, colour-coded stat bars. Anything past the white tick is beyond normal limits, shown in red and gold, which leaves room for more Mythic jets</li></ul>
     <h3>Earlier updates</h3>
-    <ul><li>WW1 biplanes, evolutions (MK II to IV) and the B-2 Spirit</li></ul>
+    <ul><li>Top Scores board, WW1 biplanes, evolutions (MK II to IV) and the B-2 Spirit</li></ul>
     <button id="nClose" type="button">Let's fly</button>
   </div>
 </div>
@@ -293,9 +296,10 @@ const MODES=[
   {id:'hardcore',name:'HARDCORE',ic:'💀', col:'#ff9f1c',rule:'1 life · ×2', desc:'One life, no healing, no revives. Double score and coins.'},
   {id:'horde',   name:'HORDE',   ic:'🐝', col:'#80ffdb',rule:'Swarm',       desc:'Endless swarms of weak ships. Coins rain from every kill.'},
   {id:'airwar',name:'AIR WAR',ic:'🛩️', col:'#9db4c0',rule:'WW2 raids',desc:'Fighters and heavy bombers. A battleship boss every 4th raid.'},
+  {id:'story',name:'STORY MODE',ic:'📜', col:'#e8c9a0',rule:'Wings of War',desc:'Follow the Whitaker family through two world wars, 1916 to 1965.'},
   {id:'dogfight',name:'DOGFIGHT',ic:'✈️', col:'#d4a373',rule:'WW1 squadrons',desc:'Biplane squadrons and balloons. An ace pilot every 3rd wave.'}
 ];
-const modeCard=i=>({x:16+(i%2)*232,y:84+Math.floor(i/2)*120,w:216,h:112});
+const modeCard=i=>({x:16+(i%2)*232,y:84+Math.floor(i/2)*100,w:216,h:96});
 let casMode='slots',casBet=50,casSpinning=false,casT=0,casReels=[0,0,0],casTarget=[0,0,0],casResult='',casFlash=0,casRouAngle=0,casRouTarget=0,casWin=0,casRouFrom=0,casRouSeg=0,casRouLast=-1,casBetType='green',casBetNum=1,casSpinBet=null,casRS=[0,0,0],casRD=[0,0,0],casStop=[0,0,0];
 const rouMod=a=>((a%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
 const rouSegAt=a=>Math.floor(rouMod(-Math.PI/2-a)/(Math.PI/4))%8;   // which segment is under the pointer (top) at wheel angle a
@@ -318,7 +322,7 @@ const ACHIEVE=[
 ];
 function loadProfile(name,dev){
   user=name;isDev=dev;pkey=name.toLowerCase();
-  best=0;bank=0;owned=Array(JETS.length).fill(false);owned[0]=true;jetStars=Array(JETS.length).fill(0);jetEvo=Array(JETS.length).fill(0);jetDup=Array(JETS.length).fill(0);jetSel=0;campaignProg=0;
+  best=0;bank=0;owned=Array(JETS.length).fill(false);owned[0]=true;jetStars=Array(JETS.length).fill(0);jetEvo=Array(JETS.length).fill(0);jetDup=Array(JETS.length).fill(0);jetSel=0;campaignProg=0;storyProg=0;
   pityEpic=0;pityLeg=0;pxp=0;plvl=1;dailyQ=[];dailyDay='';ach={};stats={kills:0,maxwave:0,packs:0};
   try{best=+localStorage.getItem('starfall_best_'+pkey)||0}catch(e){}
   let sv={};
@@ -338,21 +342,21 @@ function loadProfile(name,dev){
   if(Array.isArray(sv.dup)){for(let i=0;i<Math.min(sv.dup.length,JETS.length);i++)jetDup[i]=Math.max(0,Math.min(500,sv.dup[i]|0))}
   if(dev)owned=owned.map(()=>true);
   if(sv.sel>=0&&sv.sel<JETS.length&&owned[sv.sel])jetSel=sv.sel;
-  campaignProg=sv.camp|0;pityEpic=sv.pe|0;pityLeg=sv.pl|0;pxp=sv.xp|0;plvl=Math.max(1,sv.lv|1);
+  campaignProg=sv.camp|0;storyProg=sv.sp|0;pityEpic=sv.pe|0;pityLeg=sv.pl|0;pxp=sv.xp|0;plvl=Math.max(1,sv.lv|1);
   dailyDay=sv.dday||'';dailyQ=Array.isArray(sv.dq)?sv.dq:[];
   ach=sv.ach&&typeof sv.ach==='object'?sv.ach:{};
   if(sv.stats){stats.kills=sv.stats.kills|0;stats.maxwave=sv.stats.maxwave|0;stats.packs=sv.stats.packs|0}
   refreshDaily();
   modeBest=(sv.mb&&typeof sv.mb==='object')?sv.mb:{};if(!modeBest.endless)modeBest.endless=best;
   gameMode=MODES.some(m=>m.id===sv.gm)?sv.gm:'endless';best=modeBest[gameMode]||0;
-  if(dev){campaignProg=99;bank=999999999}
+  if(dev){campaignProg=99;storyProg=99;bank=999999999}
   hqLoad(sv,dev);gameSpd=SPEEDS.includes(sv.spd)?sv.spd:1;
   hIdx=jetSel;
 }
 const sigOf=(k,raw)=>h53('sf-sig::v1::'+k+'::'+raw);
 let tamperMsg=false;
 function writeSave(k,raw){try{localStorage.setItem('starfall_save_'+k,raw);localStorage.setItem('starfall_sig_'+k,sigOf(k,raw))}catch(e){}}
-function saveAll(){if(!pkey)return;modeBest[gameMode]=Math.max(modeBest[gameMode]||0,best);try{writeSave(pkey,JSON.stringify({bank:isDev?999999999:bank,owned,stars:jetStars,evo:jetEvo,dup:jetDup,sel:jetSel,traits:Object.keys(tOwn).filter(k=>tOwn[k]),got:got.slice(-300),camp:campaignProg,pe:pityEpic,pl:pityLeg,xp:pxp,lv:plvl,dday:dailyDay,dq:dailyQ,ach,stats,mb:modeBest,gm:gameMode,spd:gameSpd,hq:hqSave()}))}catch(e){}}
+function saveAll(){if(!pkey)return;modeBest[gameMode]=Math.max(modeBest[gameMode]||0,best);try{writeSave(pkey,JSON.stringify({bank:isDev?999999999:bank,owned,stars:jetStars,evo:jetEvo,dup:jetDup,sel:jetSel,traits:Object.keys(tOwn).filter(k=>tOwn[k]),got:got.slice(-300),camp:campaignProg,sp:storyProg,pe:pityEpic,pl:pityLeg,xp:pxp,lv:plvl,dday:dailyDay,dq:dailyQ,ach,stats,mb:modeBest,gm:gameMode,spd:gameSpd,hq:hqSave()}))}catch(e){}}
 function checkAch(){
   const vals={kills:stats.kills,maxwave:stats.maxwave,packs:stats.packs,stars:jetStars.reduce((a,b)=>a+(b|0),0),camp:campaignProg,plvl:plvl,bank:bank};
   ACHIEVE.forEach(a=>{
@@ -506,6 +510,21 @@ function drawTraits(){
     ctx.restore();
   });
 }
+const STORY=[
+  {year:'1916',ww1:true,name:'The Beginning of Flight',story:'1916. Above the muddy trenches of France, 19-year-old Thomas Whitaker flies his first patrol in an Airco DH.2. An enemy fighter closes through the clouds. His instructor\'s words echo: "The sky belongs to nobody, Whitaker. You have to earn your place in it."',waves:[{n:6,types:[8],gap:1.1},{n:8,types:[8,8,9],gap:.9}],reward:200},
+  {year:'1917',ww1:true,name:"A Pilot's Courage",story:'1917. Thomas now flies the Sopwith Camel over northern France, and the patrols grow deadlier. After one clash a close friend does not return. That night he writes: "Flying is everything I ever wanted, but I never imagined what it would take from me."',waves:[{n:10,types:[8,8,9],gap:.8},{n:8,types:[8,9],gap:.7},{n:1,types:[8],gap:0,ace:true}],reward:300},
+  {year:'1918',ww1:true,name:'The Armistice',story:'November 1918. Thomas has survived years in the air. One last great raid stands between him and home, a zeppelin over the lines. Then the guns fall silent. He will marry Eleanor, become an instructor, and hope his son never has to fly to war.',waves:[{n:12,types:[8,9,8],gap:.65},{n:10,types:[8],gap:.55},{n:1,types:[4],gap:0,boss:true}],reward:500},
+  {year:'1939',ww2:true,name:'A New War',story:'1939. Twenty years on, Britain is at war again. Edward Whitaker, 21, volunteers for the RAF. His father warns him: "This is not the same war I fought." Edward answers: "I know, Father. But I want to do my part."',waves:[{n:8,types:[10],gap:1},{n:10,types:[10,10],gap:.8}],reward:600},
+  {year:'1940',ww2:true,name:'Into the Skies',story:'1940. Edward joins a fighter squadron for the Battle of Britain, flying the Hurricane and then the Spitfire. His closest friend is fellow pilot William Carter. They talk about engines, and what they will do after the war.',waves:[{n:10,types:[10],gap:.8},{n:8,types:[10,11],gap:.8}],reward:700},
+  {year:'1940',ww2:true,name:'The Battle of Britain',story:'Summer 1940. German aircraft pour across the Channel. William radios: "Whitaker, I have engine trouble. I am heading back." Edward guards him home. "One day, I will return the favour." "Just make sure you are still flying tomorrow."',waves:[{n:12,types:[10,11],gap:.65},{n:10,types:[11,10,10],gap:.6},{n:12,types:[10,11],gap:.5}],reward:900},
+  {year:'1942',ww2:true,name:'Across the Channel',story:'1942. The war spreads across Europe and North Africa. Edward meets Robert Hayes, a confident young Texan who flies the P-51 Mustang. Different backgrounds, one cause: the Allied air forces fight as one.',waves:[{n:14,types:[10,11],gap:.55},{n:1,types:[10],gap:0,ace:true},{n:10,types:[10,10,11],gap:.5}],reward:1100},
+  {year:'1944-45',ww2:true,name:'The Final Years',story:'1944. The Allies drive across Europe and Edward now trains young recruits, thinking of his father\'s stories from 1916. The wooden biplanes are gone, replaced by metal fighters, radar and radio. One great operation remains.',waves:[{n:14,types:[10,11],gap:.55},{n:10,types:[10,10,11],gap:.5},{n:1,types:[4],gap:0,boss:true}],reward:1500},
+  {year:'1955',name:'A New Generation',story:'1955. Edward\'s son James grows up among photographs of biplanes and Spitfires, but the jet age has arrived. He dreams of the Gloster Meteor. His father tells him: "Perhaps you will fly something neither of us could have imagined."',waves:[{n:10,types:[0,1],gap:.8},{n:8,types:[1,2],gap:.7},{n:12,types:[0,1,2],gap:.6}],reward:1200},
+  {year:'1960',name:'The Jet Age',story:'1960. James joins the RAF and trains on jets. Speed demands new skills. At home, two photographs hang on the wall: Thomas with his Camel and Edward with his Spitfire. James adds a third. Three generations, three eras, one family.',waves:[{n:12,types:[1,2,3],gap:.6},{n:8,types:[2,3],gap:.55},{n:12,types:[0,2,3],gap:.5}],reward:1500},
+  {year:'1965',name:'Wings of War',story:'1965. James finds his grandfather\'s flying diary. The last entry reads: "I do not know what aircraft the future will bring. But whatever happens, there will always be someone looking towards the sky, dreaming of flight."',waves:[{n:14,types:[1,2,3],gap:.5},{n:10,types:[2,3],gap:.5},{n:1,types:[4],gap:0,boss:true}],reward:3000}
+];
+let storyProg=0,storyActive=false;
+const CAMP=()=>storyActive?STORY:CAMPAIGN,PROG=()=>storyActive?storyProg:campaignProg,SETPROG=v=>{if(storyActive)storyProg=v;else campaignProg=v};
 function exitToMenu(){saveBest();saveAll();exitArm=0;ptr.active=false;isCampaign=false;state='menu'}
 function tryExit(){if(exitArm>0)exitToMenu();else exitArm=2.5}
 
@@ -1226,7 +1245,7 @@ addEventListener('keydown',e=>{
     if(k==='escape'||k==='b'){state='menu';return}
     if(k==='enter'||k===' '){startCampaignLevel(campSel);return}
     if(k==='arrowleft'||k==='a')campSel=Math.max(0,campSel-1);
-    if(k==='arrowright'||k==='d')campSel=Math.min(CAMPAIGN.length-1,campSel+1);
+    if(k==='arrowright'||k==='d')campSel=Math.min(CAMP().length-1,campSel+1);
     return;
   }
   if(hqKey(k))return;
@@ -1260,7 +1279,7 @@ addEventListener('keydown',e=>{
   if(k==='x'&&state==='menu'){openTrade();return}
   if(k==='e'&&state==='menu'){modeSel=Math.max(0,MODES.findIndex(m=>m.id===gameMode));state='modes';return}
   if(k==='t'&&state==='menu'){state='traits';return}
-  if(k==='c'&&state==='menu'){state='campselect';campSel=Math.min(campaignProg,CAMPAIGN.length-1);return}
+  if(k==='c'&&state==='menu'){storyActive=false;state='campselect';campSel=Math.min(PROG(),CAMP().length-1);return}
   if(k==='q'&&state==='menu'){state='quests';return}
   if(k==='a'&&state==='menu'){state='achieve';return}
   if((k==='g'||k==='o')&&state==='menu'){casOpen();return}
@@ -1306,10 +1325,10 @@ cv.addEventListener('pointerdown',e=>{
   }
   if(state==='campselect'){
     if(inR(p,hb.back)){state='menu';return}
-    for(let i=0;i<CAMPAIGN.length;i++){
+    for(let i=0;i<CAMP().length;i++){
       const cx=40+(i%4)*105,cy=100+Math.floor(i/4)*150;
       if(p.x>=cx&&p.x<=cx+95&&p.y>=cy&&p.y<=cy+130){
-        if(i<=campaignProg){campSel=i;startCampaignLevel(i)}
+        if(i<=PROG()){campSel=i;startCampaignLevel(i)}
         return;
       }
     }
@@ -1318,7 +1337,7 @@ cv.addEventListener('pointerdown',e=>{
   if(state==='menu'){
     if(inR(p,hb.menuBtn)){state='hangar';hIdx=jetSel}
     else if(inR(p,hb.traitBtn)){state='traits'}
-    else if(inR(p,hb.campBtn)){state='campselect';campSel=Math.min(campaignProg,CAMPAIGN.length-1)}
+    else if(inR(p,hb.campBtn)){storyActive=false;state='campselect';campSel=Math.min(PROG(),CAMP().length-1)}
     else if(inR(p,hb.tradeBtn)){openTrade()}
     else if(inR(p,hb.questBtn)){state='quests'}
     else if(inR(p,hb.achBtn)){state='achieve'}
@@ -1433,9 +1452,9 @@ function spawnSummon(free){
 }
 function useSummon(){spawnSummon(false)}
 function startCampaignLevel(idx){
-  if(idx>campaignProg)return;
+  if(idx>PROG())return;
   campLevel=idx;
-  const L=CAMPAIGN[idx];
+  const L=CAMP()[idx];
   storyText=L.story;
   storyNext=()=>{startGame(true);loadCampaignWaves(L)};
   state='story';storyT=0;
@@ -1453,7 +1472,7 @@ function loadCampaignWaves(L){
       t+=w.n*w.gap+1.2;
     }
   });
-  banner=CAMPAIGN[campLevel].name;bannerT=2.4;
+  banner=CAMP()[campLevel].name;bannerT=2.4;
 }
 function advanceStory(){if(storyNext){const fn=storyNext;storyNext=null;fn()}}
 
@@ -1667,8 +1686,8 @@ function update(dt){
   /* waves */
   if(!enemies.length&&!queue.length){
     if(isCampaign){
-      if(campLevel>=campaignProg)campaignProg=campLevel+1;
-      bank+=CAMPAIGN[campLevel].reward;runCoins+=CAMPAIGN[campLevel].reward;
+      if(campLevel>=PROG())SETPROG(campLevel+1);
+      bank+=CAMP()[campLevel].reward;runCoins+=CAMP()[campLevel].reward;
       addXP(40+campLevel*25);checkAch();
       saveAll();state='over';overT=0;
     }else if(gameMode==='hq'&&hqWinCheck()){}
@@ -2006,21 +2025,22 @@ function draw(){
       const oa=Math.min(1,overT*2);
       ctx.fillStyle=`rgba(5,6,15,${.72*oa})`;ctx.fillRect(0,0,W,H);ctx.globalAlpha=oa;
       const won=(isCampaign||hqWon)&&!P.dead;
-      text(won?(hqWon?'CLEARED!':'MISSION COMPLETE'):timeUp?'TIME UP!':'GAME OVER',W/2,H/2-110,42,won||timeUp?'#80ffdb':'#ff5577');
+      text(won?(hqWon?'CLEARED!':storyActive?'CHAPTER COMPLETE':'MISSION COMPLETE'):timeUp?'TIME UP!':'GAME OVER',W/2,H/2-110,42,won||timeUp?'#80ffdb':'#ff5577');
       const mm=gameMode==='hq'?hqOverTag():(MODES.find(m=>m.id===gameMode)||MODES[0]);if(!isCampaign)text(mm.ic+' '+mm.name,W/2,H/2-78,13,mm.col,'center','700');
       text('Score',W/2,H/2-45,16,'#9bb','center','600');
       text(String(score).padStart(1,'0'),W/2,H/2-10,48,'#fff');
       text(score>=best&&score>0?'★ NEW BEST ★':'Best  '+best,W/2,H/2+35,20,score>=best&&score>0?'#ffd166':'#9bb');
       if(isCampaign){
-        text(CAMPAIGN[campLevel].name,W/2,H/2+62,16,'#8fb4ff','center','600');
-        if(won)text('🪙 +'+CAMPAIGN[campLevel].reward+' reward',W/2,H/2+90,17,'#ffd166');
+        text(CAMP()[campLevel].name,W/2,H/2+62,16,'#8fb4ff','center','600');
+        if(won)text('🪙 +'+CAMP()[campLevel].reward+' reward',W/2,H/2+90,17,'#ffd166');
         else text('Bank '+bank,W/2,H/2+90,15,'#9bb');
+        if(won&&storyActive&&campLevel===STORY.length-1)text('THE END  ·  Wings of War',W/2,H/2+125,16,'#e8c9a0','center','700');
       }else{
         text(gameMode==='hq'?hqOverLine():gameMode==='bossrush'?'Bosses defeated '+bossKills:gameMode==='blitz'?'Waves cleared '+Math.max(0,wave-1):'Reached wave '+wave,W/2,H/2+68,16,'#9bb','center','600');
         text('🪙 +'+runCoins+'     Bank '+bank,W/2,H/2+96,17,'#ffd166');
       }
       btn(hb.overBtn,'🛠 HANGAR  (H)','#8fb4ff');hqOverDraw();
-      if(overT>.8&&Math.floor(time*2)%2===0)text(isCampaign?'tap to retry mission':'tap or press Enter to play again',W/2,H/2+125,15,'#fff','center','600');
+      if(overT>.8&&Math.floor(time*2)%2===0)text(isCampaign?(won&&storyActive&&campLevel===STORY.length-1?'':'tap to retry mission'):'tap or press Enter to play again',W/2,H/2+125,15,'#fff','center','600');
       ctx.globalAlpha=1;
     }
   }
@@ -2032,7 +2052,7 @@ function drawHUD(){
   text('BEST '+best,16,48,12,'#8aa','left','600');
   text('🪙 '+runCoins,16,68,13+coinPop*12,coinPop>0?'#fff3c4':'#ffd166','left','700');
   if(gameMode==='blitz')text('⏱ '+Math.ceil(modeT)+'s',W/2,22,modeT<=10?19+Math.sin(time*12)*2:19,modeT<=10?'#ff5577':'#4cc9f0','center','700');
-  else if(isCampaign)text('MISSION '+(campLevel+1)+' · '+CAMPAIGN[campLevel].name.toUpperCase(),W/2,22,13,'#8aa','center','700');
+  else if(isCampaign)text((storyActive?'CHAPTER ':'MISSION ')+(campLevel+1)+' · '+CAMP()[campLevel].name.toUpperCase(),W/2,22,13,'#8aa','center','700');
   else text((gameMode==='bossrush'?'BOSS ':gameMode==='horde'?'SWARM ':gameMode==='dogfight'?'SQUADRON ':gameMode==='airwar'?'RAID ':gameMode==='hardcore'?'💀 WAVE ':'WAVE ')+Math.max(1,wave),W/2,22,14,'#8aa','center','700');
   for(let i=0;i<P.hp;i++){const pl=P.hp<=1?Math.sin(time*10)*3:Math.sin(time*3+i)*.8;
     text('♥',W-18-i*20+R(-1,1)*hpShake*8,22+R(-1,1)*hpShake*8,20+pl,'#ff5c8a','center')}
@@ -2174,7 +2194,8 @@ function drawAchieve(){
 function wrapLines(str,n){const out=[];let cur='';for(const w of str.split(' ')){if((cur?cur+' '+w:w).length>n){out.push(cur);cur=w}else cur=cur?cur+' '+w:w}if(cur)out.push(cur);return out}
 function startMode(id){
   if(id==='hq')id='endless';
-  if(id==='campaign'){gameMode='campaign';best=modeBest.campaign||0;state='campselect';campSel=Math.min(campaignProg,CAMPAIGN.length-1);return}
+  if(id==='story'){storyActive=true;gameMode='story';best=modeBest.story||0;state='campselect';campSel=Math.min(PROG(),CAMP().length-1);return}
+  if(id==='campaign'){storyActive=false;gameMode='campaign';best=modeBest.campaign||0;state='campselect';campSel=Math.min(PROG(),CAMP().length-1);return}
   gameMode=id;best=modeBest[id]||0;startGame(false);
 }
 function drawModes(){
@@ -2187,11 +2208,11 @@ function drawModes(){
     rr(r.x,r.y,r.w,r.h,16);const g=ctx.createLinearGradient(0,r.y,0,r.y+r.h);g.addColorStop(0,m.col+'30');g.addColorStop(1,'rgba(10,12,34,.92)');
     ctx.fillStyle=g;ctx.fill();ctx.restore();
     rr(r.x,r.y,r.w,r.h,16);ctx.lineWidth=sel?3:1.5;ctx.strokeStyle=sel?m.col:m.col+'77';ctx.stroke();
-    text(m.ic,r.x+34,r.y+32,30,'#fff','center','400');
-    text(m.name,r.x+62,r.y+28,17,m.col,'left','800');
-    text(m.rule,r.x+62,r.y+48,10,'#9bb','left','700');
-    wrapLines(m.desc,30).forEach((ln,j)=>text(ln,r.x+14,r.y+60+j*13,11,'#c8d4ff','left','500'));
-    text(m.id==='campaign'?Math.min(campaignProg,CAMPAIGN.length)+'/'+CAMPAIGN.length+' missions':'BEST '+(modeBest[m.id]||0).toLocaleString(),r.x+14,r.y+r.h-9,12,'#ffd166','left','700');
+    text(m.ic,r.x+34,r.y+26,28,'#fff','center','400');
+    text(m.name,r.x+62,r.y+20,16,m.col,'left','800');
+    text(m.rule,r.x+62,r.y+37,10,'#9bb','left','700');
+    wrapLines(m.desc,34).forEach((ln,j)=>text(ln,r.x+14,r.y+56+j*12,10.5,'#c8d4ff','left','500'));
+    text(m.id==='campaign'?Math.min(campaignProg,CAMPAIGN.length)+'/'+CAMPAIGN.length+' missions':m.id==='story'?Math.min(storyProg,STORY.length)+'/'+STORY.length+' chapters':'BEST '+(modeBest[m.id]||0).toLocaleString(),r.x+14,r.y+r.h-7,12,'#ffd166','left','700');
     if(cur)text('● LAST',r.x+r.w-12,r.y+16,10,'#80ffdb','right','700');
   });
   drawSpdRow();
@@ -2200,10 +2221,10 @@ function drawModes(){
 function drawCampSelect(){
   ctx.fillStyle='rgba(5,6,15,.55)';ctx.fillRect(0,0,W,H);
   btn(hb.back,'← BACK','#8fb4ff',null,15);
-  text('CAMPAIGN',W/2,36,28,'#fff');
-  text('Progress: '+Math.min(campaignProg,CAMPAIGN.length)+' / '+CAMPAIGN.length,W/2,64,14,'#8fb4ff','center','600');
-  CAMPAIGN.forEach((L,i)=>{
-    const unlocked=i<=campaignProg;
+  text(storyActive?'STORY MODE':'CAMPAIGN',W/2,36,28,'#fff');
+  text('Progress: '+Math.min(PROG(),CAMP().length)+' / '+CAMP().length,W/2,64,14,'#8fb4ff','center','600');
+  CAMP().forEach((L,i)=>{
+    const unlocked=i<=PROG();
     const cx=40+(i%4)*105,cy=100+Math.floor(i/4)*150;
     rr(cx,cy,95,130,12);
     ctx.fillStyle=unlocked?(i===campSel?'rgba(255,209,102,.18)':'rgba(143,180,255,.1)'):'rgba(40,40,60,.4)';
@@ -2212,19 +2233,20 @@ function drawCampSelect(){
     ctx.strokeStyle=unlocked?(i===campSel?'#ffd166':'#8fb4ff'):'#445';
     ctx.stroke();
     text((i+1).toString(),cx+47,cy+28,22,unlocked?'#fff':'#667');
-    text(L.name,cx+47,cy+58,11,unlocked?'#c8d4ff':'#556','center','600');
+    text(L.name,cx+47,cy+58,L.name.length>16?9:11,unlocked?'#c8d4ff':'#556','center','600');
+    if(L.year)text(L.year,cx+47,cy+44,10,unlocked?'#e8c9a0':'#556','center','700');
     text('🪙 '+L.reward,cx+47,cy+82,12,unlocked?'#ffd166':'#445');
     if(!unlocked)text('🔒',cx+47,cy+108,18,'#667');
-    else if(i<campaignProg)text('✓',cx+47,cy+108,18,'#80ffdb');
+    else if(i<PROG())text('✓',cx+47,cy+108,18,'#80ffdb');
     else text('▶',cx+47,cy+108,16,'#ffd166');
   });
   text('Select a mission  ·  arrow keys or tap',W/2,H-30,13,'#8aa','center','500');
 }
 function drawStory(){
   ctx.fillStyle='rgba(5,6,15,.82)';ctx.fillRect(0,0,W,H);
-  const L=CAMPAIGN[campLevel];
-  text('MISSION '+(campLevel+1),W/2,H*.22,18,'#8fb4ff');
-  text(L.name.toUpperCase(),W/2,H*.30,32,'#fff');
+  const L=CAMP()[campLevel];
+  text(storyActive?'CHAPTER '+(campLevel+1)+'  ·  '+L.year:'MISSION '+(campLevel+1),W/2,H*.17,18,storyActive?'#e8c9a0':'#8fb4ff');
+  text(L.name.toUpperCase(),W/2,H*.25,L.name.length>16?25:32,'#fff');
   const words=L.story.split(' ');
   let line='',lines=[],maxW=380;
   ctx.font='500 16px system-ui,sans-serif';
@@ -2234,7 +2256,7 @@ function drawStory(){
     else line=test;
   });
   if(line)lines.push(line);
-  lines.forEach((l,i)=>text(l.trim(),W/2,H*.42+i*26,16,'#c8d4ff','center','500'));
+  lines.forEach((l,i)=>text(l.trim(),W/2,H*.35+i*25,16,'#c8d4ff','center','500'));
   if(Math.floor(time*2)%2===0||storyT>1.2)text('tap or press Enter to launch',W/2,H*.82,18,'#ffd166');
 }
 
@@ -2834,7 +2856,7 @@ function tabPilot(){
   text(pxp+' / '+XP_NEED(plvl)+' XP',W-32,y+66,10,'#9bb','right','600');
   y+=118;
   const rc=Object.values(hq.raids).reduce((a,b)=>a+(b|0),0),tc=Object.keys(hq.trials).length;
-  const rows=[['🪙 Coins',isDev?'∞':bank],['🏆 Best Endless score',(modeBest.endless|0).toLocaleString()],['🌊 Highest wave',stats.maxwave|0],['👾 Enemies destroyed',(stats.kills|0).toLocaleString()],['📦 Jet packs opened',stats.packs|0],['🛸 Wingmen summoned',hq.pulls],['🎟 Raids cleared',rc],['⌛ Trials cleared',tc+' / '+TRIALS.length],['🏅 Achievements',ACHIEVE.filter(a=>ach[a.id]).length+' / '+ACHIEVE.length],['📖 Campaign',Math.min(campaignProg,CAMPAIGN.length)+' / '+CAMPAIGN.length]];
+  const rows=[['🪙 Coins',isDev?'∞':bank],['🏆 Best Endless score',(modeBest.endless|0).toLocaleString()],['🌊 Highest wave',stats.maxwave|0],['👾 Enemies destroyed',(stats.kills|0).toLocaleString()],['📦 Jet packs opened',stats.packs|0],['🛸 Wingmen summoned',hq.pulls],['🎟 Raids cleared',rc],['⌛ Trials cleared',tc+' / '+TRIALS.length],['🏅 Achievements',ACHIEVE.filter(a=>ach[a.id]).length+' / '+ACHIEVE.length],['📖 Campaign',Math.min(PROG(),CAMP().length)+' / '+CAMP().length]];
   rows.forEach((r,i)=>{text(r[0],28,y+i*26,13,'#cfd8e6','left','600');text(String(r[1]),W-28,y+i*26,13,'#ffd166','right','700')});
   y+=rows.length*26+8;
   text('SQUAD',28,y,11,'#8fb4ff','left');
@@ -2859,7 +2881,7 @@ function tabRanks(){
 
 /* ----- TOP SCORES: best run per pilot, per game mode (this device) ----- */
 let hqScoreMode=0;
-const SCORE_MODES=MODES.filter(m=>m.id!=='campaign');
+const SCORE_MODES=MODES.filter(m=>m.id!=='campaign'&&m.id!=='story');
 function tabScores(){
   const m=SCORE_MODES[hqScoreMode%SCORE_MODES.length];
   hqBtn(16,HQ_Y0,48,38,'◀','#8fb4ff',()=>{hqScoreMode=(hqScoreMode+SCORE_MODES.length-1)%SCORE_MODES.length},false,16);
@@ -2926,8 +2948,8 @@ function icoMatch(label){
 /* ---------- new enemies and boss patterns ---------- */
 const BC=[['#6a1b3a','#ff6b8a','#ff4d6d'],['#1b3a6a','#6bb8ff','#4d9dff'],['#3a1b6a','#c58bff','#a64dff'],['#1b6a3a','#6bff9e','#4dff88'],['#5b4a32','#d9b56e','#a07a3a'],['#4d5862','#a9b6c0','#7d8791']];
 const BNAME=['CLASSIC DREADNOUGHT','SPIRAL WARDEN','LASER SWEEPER','HIVE QUEEN','ZEPPELIN','BATTLESHIP'];
-const ww2On=()=>!!((isCampaign&&CAMPAIGN[campLevel]&&CAMPAIGN[campLevel].ww2)||gameMode==='airwar');
-const ww1On=()=>!!((isCampaign&&CAMPAIGN[campLevel]&&CAMPAIGN[campLevel].ww1)||gameMode==='dogfight');
+const ww2On=()=>!!((isCampaign&&CAMP()[campLevel]&&CAMP()[campLevel].ww2)||gameMode==='airwar');
+const ww1On=()=>!!((isCampaign&&CAMP()[campLevel]&&CAMP()[campLevel].ww1)||gameMode==='dogfight');
 function makeAce(e){e.ace=1;e.hp=e.max=28+wave*2;e.r=22;e.score=1500;e.vy=60;float(W/2,H*.3,'ACE PILOT','#ff2d55');say('Ace pilot incoming')}
 function zepDraw(e,col){
   const pulse=Math.sin(e.age*3)*2;
@@ -3335,11 +3357,11 @@ bFill.addEventListener('click',e=>{window.sfForce=!window.sfForce;syncBar();save
     else if(!o&&open){open=false;dtw.hidden=true}
   },1000);
 })();
-const NEWS_VER='ww2-1';
+const NEWS_VER='story-1';
 function showNews(){
   let seen='';try{seen=localStorage.getItem('starfall_news')||''}catch(e){}
   if(seen===NEWS_VER)return;
-  const n=document.getElementById('news');n.hidden=false;document.getElementById('nClose').focus();say("What's new: WW2 update. Press any key to close.");
+  const n=document.getElementById('news');n.hidden=false;document.getElementById('nClose').focus();say("What's new: Story Mode. Press any key to close.");
 }
 function closeNews(){
   const n=document.getElementById('news');if(n.hidden)return;
