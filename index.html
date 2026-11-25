@@ -1329,7 +1329,8 @@ addEventListener('keydown',e=>{
     if(k==='2'&&!casSpinning){casMode='roulette';casResult=''}
     return;
   }
-  if(k==='h'&&(state==='menu'||(state==='over'&&overT>.4))){state='hangar';hIdx=jetSel;return}
+  if(k==='h'&&state==='menu'){state='hangar';hIdx=jetSel;return}
+  if(state==='over'&&overT>.4&&(k==='escape'||k==='h')){exitToMenu();return}
   if(state==='menu'&&(k==='enter'||k===' '))startMode(gameMode);
   else if(state==='over'&&overT>.8&&(k==='enter'||k===' ')){
     if(isCampaign)startCampaignLevel(campLevel);else startGame(false);
@@ -1378,7 +1379,7 @@ cv.addEventListener('pointerdown',e=>{
   else if(state==='hangar'){hangarClick(p);}
   else if(state==='traits'){traitsClick(p);}
   else if(state==='over'){
-    if(overT>.4&&inR(p,hb.overBtn)){state='hangar';hIdx=jetSel}
+    if(overT>.4&&inR(p,hb.overBtn)){exitToMenu()}
     else if(overT>.8){if(isCampaign)startCampaignLevel(campLevel);else startGame(false)}
   }
   else if(state==='pause'){
@@ -2069,7 +2070,7 @@ function draw(){
         text(gameMode==='hq'?hqOverLine():gameMode==='bossrush'?'Bosses defeated '+bossKills:gameMode==='blitz'?'Waves cleared '+Math.max(0,wave-1):'Reached wave '+wave,W/2,H/2+68,16,'#9bb','center','600');
         text('🪙 +'+runCoins+'     Bank '+bank,W/2,H/2+96,17,'#ffd166');
       }
-      btn(hb.overBtn,'🛠 HANGAR  (H)','#8fb4ff');hqOverDraw();
+      btn(hb.overBtn,'🏠 MENU  (Esc)','#8fb4ff');hqOverDraw();
       if(overT>.8&&Math.floor(time*2)%2===0)text(isCampaign?(won&&storyActive&&campLevel===STORY.length-1?'':'tap to retry mission'):'tap or press Enter to play again',W/2,H/2+125,15,'#fff','center','600');
       ctx.globalAlpha=1;
     }
