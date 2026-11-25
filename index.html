@@ -3034,19 +3034,22 @@ function extUpdate(dt){
         if(e.cd<=0){ebullet(e.x,e.y+10,e.aim,bsp()*2.1,4,'#ff2d55');e.cd=2.6;e.tl=0;sfx('eshoot',700,.1,'square',.03,-400,60)}
       }
     }else if(e.t===8){
+      e.y+=e.vy*dt*(e.ace&&e.y>130?.2:1);
       e.x+=Math.sin(e.age*2.2+e.x0)*(e.ace?140:90)*dt;e.x=clamp(e.x,24,W-24);
-      if(e.ace&&e.y>130)e.y-=e.vy*dt*.9;
       e.cd-=dt;
       if(e.cd<=0&&e.y>0&&e.y<H-120){e.cd=e.ace?.9:R(1.6,2.6);const a=Math.atan2(P.y-e.y,P.x-e.x);if(e.ace){for(let i=-1;i<=1;i++)ebullet(e.x,e.y+14,a+i*.2,bsp()*1.05,5,'#ff5577')}else{ebullet(e.x-8,e.y+12,a,bsp()*.95,4,'#ffd8a0');ebullet(e.x+8,e.y+12,a,bsp()*.95,4,'#ffd8a0')}sfx('eshoot',320,.08,'square',.02,-120,70)}
     }else if(e.t===9){
+      e.y+=e.vy*dt;
       e.x+=Math.sin(e.age*.9+e.x0)*28*dt;e.x=clamp(e.x,28,W-28);
       e.cd-=dt;
       if(e.cd<=0&&e.y>0&&e.y<H-160){e.cd=2.6;ebullet(e.x,e.y+20,Math.PI/2,bsp()*.55,7,'#ffb347')}
     }else if(e.t===10){
+      e.y+=e.vy*dt*(e.ace&&e.y>140?.2:1);
       e.x+=Math.sin(e.age*3.2+e.x0)*(e.ace?150:125)*dt;e.x=clamp(e.x,24,W-24);
       e.cd-=dt;
       if(e.cd<=0&&e.y>0&&e.y<H-120){e.cd=e.ace?1:R(1.7,2.5);const a=Math.atan2(P.y-e.y,P.x-e.x);for(const d of(e.ace?[-.14,0,.14]:[-.06,.06]))ebullet(e.x,e.y+12,a+d,bsp()*1.1,4,'#ffe08a');sfx('eshoot',380,.07,'square',.02,-140,70)}
     }else if(e.t===11){
+      e.y+=e.vy*dt;
       e.x+=Math.sin(e.age*.7+e.x0)*34*dt;e.x=clamp(e.x,36,W-36);
       e.cd-=dt;
       if(e.cd<=0&&e.y>0&&e.y<H-170){e.cd=2.1;for(const dx of[-26,0,26])ebullet(e.x+dx,e.y+24,Math.PI/2,bsp()*.6,6,'#ffb347')}
@@ -3325,9 +3328,9 @@ function bgDraw(dt){
     tx(user+(isDev?' ★':''),Rx+18,py+36,20,'#fff',0,800);
     tx('LEVEL '+plvl,Rx+18,py+62,12,'#ffd166',0,700);
     tx('🪙 '+(isDev?'∞':bank.toLocaleString()),Rx+18,py+92,16,'#ffd166',0,700);
-    tx('JET',Rx+18,py+124,11,'#8fb4ff',0,700);tx(JETS[jetSel].name,Rx+18,py+144,14,'#fff');
+    tx('JET',Rx+18,py+124,11,'#8fb4ff',0,700);tx(JETS[(storyJetIdx>=0&&(state==='play'||state==='pause'||state==='over'))?storyJetIdx:jetSel].name,Rx+18,py+144,14,'#fff');
     tx('SQUAD',Rx+18,py+178,11,'#8fb4ff',0,700);
-    hq.squad.forEach((id,i)=>{const dd=WINGS.find(x=>x.id===id);if(dd)tx(dd.e,Rx+18+i*38,py+206,22,'#fff')});
+    ((storyJetIdx>=0&&(state==='play'||state==='pause'||state==='over'))?STORY[campLevel].sq:hq.squad).forEach((id,i)=>{const dd=WINGS.find(x=>x.id===id);if(dd)tx(dd.e,Rx+18+i*38,py+206,22,'#fff')});
     tx('RAID TOKENS  '+hq.tokens,Rx+18,py+246,13,'#ff8a9a',0,700);
     tx('BEST  '+(modeBest.endless|0).toLocaleString(),Rx+18,py+276,13,'#cfd8e6');
     tx('WAVE RECORD  '+(stats.maxwave|0),Rx+18,py+300,13,'#cfd8e6');
