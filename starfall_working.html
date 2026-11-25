@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Starfall</title>
+<style>
+  html,body{margin:0;height:100%;background:#05060f;overflow:hidden;font-family:system-ui,sans-serif}
+  body{display:flex;align-items:center;justify-content:center}
+  #login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(5,6,15,.9);z-index:100}
+  #login .card{width:min(340px,88vw);padding:26px 24px;border-radius:16px;background:#0d1030;border:1px solid #2b3a8f;color:#fff;text-align:center}
+  #login h1{margin:0 0 4px;font-size:34px;letter-spacing:2px}
+  #login p{margin:0 0 16px;color:#8fb4ff;font-size:13px}
+  #login input{box-sizing:border-box;width:100%;padding:12px 14px;margin:0 0 10px;border-radius:10px;border:1px solid #2b3a8f;background:#070918;color:#fff;font-size:16px}
+  #login button{width:100%;padding:13px;border:0;border-radius:10px;background:#2d7bff;color:#fff;font-size:16px;font-weight:700;cursor:pointer;margin-top:6px}
+  #ltabs{display:flex;gap:6px;margin:0 0 12px}
+  #ltabs button{flex:1;padding:9px;background:#070918;border:1px solid #2b3a8f;color:#8fb4ff;font-size:14px;border-radius:8px}
+  #ltabs button.on{background:#2d7bff;border-color:#2d7bff;color:#fff}
+  #le{min-height:18px;margin:8px 0 0;color:#ff7a8f;font-size:13px}
+  #game{display:none;color:#fff;text-align:center;padding:40px}
+  #game h1{font-size:42px;letter-spacing:3px}
+</style>
+</head>
+<body>
+<div id="login">
+  <div class="card">
+    <h1>STARFALL</h1>
+    <p>Ride the falling stars.</p>
+    <div id="ltabs">
+      <button id="tLogin" class="on" type="button">Log in</button>
+      <button id="tCreate" type="button">Create account</button>
+    </div>
+    <input id="lu" type="text" maxlength="16" placeholder="Pilot name" autocomplete="off">
+    <input id="lp" type="password" placeholder="Password" autocomplete="off">
+    <input id="lp2" type="password" placeholder="Confirm password" autocomplete="off" style="display:none">
+    <button id="lb" type="button">Log in</button>
+    <div id="le"></div>
+  </div>
+</div>
+<div id="game">
+  <h1>STARFALL</h1>
+  <p id="welcome">Logged in</p>
+  <p style="color:#8fb4ff">New updates loaded: WW2 jets, Neon jets, God's Chariot, Sonic Singh, Homeless Hero (0.001% from Goats Pack)</p>
+  <p style="margin-top:30px;color:#ffd166">Dev account has full access.</p>
+</div>
+<script>
+const lu = document.getElementById('lu');
+const lp = document.getElementById('lp');
+const lp2 = document.getElementById('lp2');
+const le = document.getElementById('le');
+const lb = document.getElementById('lb');
+const tLogin = document.getElementById('tLogin');
+const tCreate = document.getElementById('tCreate');
+let mode = 'login';
+
+function setMode(m){
+  mode = m;
+  tLogin.className = m==='login' ? 'on' : '';
+  tCreate.className = m==='create' ? 'on' : '';
+  lb.textContent = m==='create' ? 'Create account' : 'Log in';
+  lp2.style.display = (m==='create' || lu.value.trim().toLowerCase()==='dev') ? 'block' : 'none';
+  le.textContent = '';
+}
+
+tLogin.onclick = () => setMode('login');
+tCreate.onclick = () => setMode('create');
+
+lu.oninput = () => {
+  const isDev = lu.value.trim().toLowerCase() === 'dev';
+  lp2.style.display = (mode==='create' || isDev) ? 'block' : 'none';
+};
+
+function doLogin(){
+  const name = lu.value.trim();
+  const pass = lp.value;
+  const pass2 = lp2.value;
+  if(name.length < 2){ le.textContent = 'Enter a pilot name'; return; }
+  if(mode==='create'){
+    if(pass.length < 4){ le.textContent = 'Password needs 4+ characters'; return; }
+    if(pass !== pass2){ le.textContent = 'Passwords do not match'; return; }
+    localStorage.setItem('sf_user_'+name.toLowerCase(), pass);
+    le.textContent = '';
+    enterGame(name, false);
+    return;
+  }
+  // Login
+  if(name.toLowerCase()==='dev' && pass==='sf-dev-54c5c8'){
+    enterGame(name, true);
+    return;
+  }
+  const saved = localStorage.getItem('sf_user_'+name.toLowerCase());
+  if(saved && saved === pass){
+    enterGame(name, false);
+    return;
+  }
+  le.textContent = 'Wrong name or password';
+}
+
+function enterGame(name, isDev){
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('game').style.display = 'block';
+  document.getElementById('welcome').textContent = 'Welcome, ' + name + (isDev ? ' (DEV)' : '');
+}
+
+lb.onclick = doLogin;
+lp.onkeydown = lp2.onkeydown = lu.onkeydown = (e) => { if(e.key==='Enter') doLogin(); };
+
+setMode('login');
+</script>
+</body>
+</html>
