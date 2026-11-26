@@ -326,13 +326,22 @@ JETS.push(
   {name:'Hawker Hunter',rarity:7,story:true,as:4,desc:'',spd:460,hp:5,rate:.72,dmg:1.9,bombs:3,mag:190,wl:2,col:'#9aa5ad',acc:'#e0e6ea'},
   {name:'English Electric Lightning',rarity:7,story:true,as:6,desc:'',spd:500,hp:5,rate:.65,dmg:2.2,bombs:4,mag:220,wl:3,col:'#b4bcc4',acc:'#ffd166'}
 );
+JETS.push(
+  // Trial jets (earned only by completing Trials, never from packs or the shop)
+  {name:'Trial Hawk',rarity:9,trial:true,desc:'Trial reward. Quick and light.',spd:430,hp:4,rate:.8,dmg:1.6,bombs:3,mag:190,wl:2,col:'#ff7b00',acc:'#ffe0b3'},
+  {name:'Trial Lynx',rarity:9,trial:true,desc:'Trial reward. Fast with a piercing shot.',spd:470,hp:4,rate:.7,dmg:1.9,bombs:3,mag:200,wl:2,col:'#00b4d8',acc:'#caf0f8',pierce:true},
+  {name:'Trial Crown',rarity:9,trial:true,desc:'Trial reward. The top prize from the hardest Trial.',spd:480,hp:7,rate:.6,dmg:2.5,bombs:5,mag:280,wl:3,col:'#f4c430',acc:'#fff8dc',phoenix:true,startShield:4}
+);
+const TRIAL_JETS=JETS.map((j,i)=>j.trial?i:-1).filter(i=>i>=0);
+// Call this when a player clears a Trial. Returns the jet index granted, or -1 if they already own it.
+function grantTrialJet(i){if(!TRIAL_JETS.includes(i)||owned[i])return -1;owned[i]=true;saveAll();return i}
 const HANG_N=JETS.findIndex(j=>j.story);
 const B2=JETS.findIndex(j=>j.name==='B-2 Spirit'),B2_CHANCE=0.0001,MYTHICS=[B2]; // add more mythic jet indexes to MYTHICS
 const WAR=JETS.map((j,i)=>j.rarity===6?i:-1).filter(i=>i>=0),WAR_W=[38,32,24,6];
 const VINT=JETS.map((j,i)=>j.rarity===5?i:-1).filter(i=>i>=0);
 const VINT_W=[55,28,14,3]; // Camel, Fokker, SPAD, Red Baron (percent)
-const RARITY_NAME=['Common','Rare','Epic','Legendary','Mythic','Vintage','Warbird','Story','Goat'];
-const RARITY_COL=['#9bb','#4cc9f0','#b86bff','#ffd166','#ff2d55','#d4a373','#8fb996','#e8c9a0','#ffd700'];
+const RARITY_NAME=['Common','Rare','Epic','Legendary','Mythic','Vintage','Warbird','Story','Goat','Trial'];
+const RARITY_COL=['#9bb','#4cc9f0','#b86bff','#ffd166','#ff2d55','#d4a373','#8fb996','#e8c9a0','#ffd700','#ff9f1c'];
 const EVO_MAX=3,EVO_NEED=t=>t+2,EVO_NAME=['','MK II','MK III','MK IV'];
 // Pack definitions: cost + weight table [common, rare, epic, legendary]
 const PACKS=[
@@ -366,7 +375,8 @@ const MODES=[
   {id:'airwar',name:'AIR WAR',ic:'🛩️', col:'#9db4c0',rule:'WW2 raids',desc:'Fighters and heavy bombers. A battleship boss every 4th raid.'},
   {id:'story',name:'STORY MODE',ic:'📜', col:'#e8c9a0',rule:'Wings of War',desc:'Follow the Whitaker family through two world wars, 1916 to 1965.'},
   {id:'dogfight',name:'DOGFIGHT',ic:'✈️', col:'#d4a373',rule:'WW1 squadrons',desc:'Biplane squadrons and balloons. An ace pilot every 3rd wave.'},
-  {id:'protect',name:'PROTECT',ic:'🌍',col:'#4ade80',rule:'Save the planet',desc:'Aliens dive at Earth. Hold the line.'}
+  {id:'protect',name:'PROTECT',ic:'🌍',col:'#4ade80',rule:'Save the planet',desc:'Aliens dive at Earth. Hold the line.'},
+  {id:'trial',name:'TRIALS',ic:'🏆',col:'#f4c430',rule:'Earn jets',desc:'Reach wave 10, 20, then 30 to unlock the trial jets.'}
 ];
 const modeCard=i=>({x:16+(i%2)*232,y:84+Math.floor(i/2)*100,w:216,h:96});
 let casMode='slots',casBet=50,casSpinning=false,casT=0,casReels=[0,0,0],casTarget=[0,0,0],casResult='',casFlash=0,casRouAngle=0,casRouTarget=0,casWin=0,casRouFrom=0,casRouSeg=0,casRouLast=-1,casBetType='green',casBetNum=1,casSpinBet=null,casRS=[0,0,0],casRD=[0,0,0],casStop=[0,0,0];
@@ -452,7 +462,7 @@ function qProg(id,n){
   if(hit)saveAll();
 }
 function addXP(n){
-  pxp+=Math.round(n*(1+hqFx.xp));
+  pxp+=Math.round(n*(1+hqFx.xp+civ.xp));
   while(pxp>=XP_NEED(plvl)){pxp-=XP_NEED(plvl);plvl++;bank+=50+plvl*20;flash=.3}
   saveAll();
 }
@@ -669,12 +679,14 @@ function showPane(n){
   $('tsend').className=n==='send'?'on':'';$('trecv').className=n==='recv'?'on':'';tmsgSet('');
 }
 function fillVals(){
-  const k=tkind.value;tval.innerHTML='';
+  const k=tkind.value,prev=tval.value;tval.innerHTML='';
   tamt.style.display=k==='c'?'block':'none';tval.style.display=k==='c'?'none':'block';
   const add=(v,l)=>{const o=document.createElement('option');o.value=v;o.textContent=l;tval.appendChild(o)};
+  if(k!=='c')add('','Choose one…');
   if(k==='j')JETS.forEach((j,i)=>{if(i>0&&owned[i])add(i,j.name)});
   if(k==='t')TRAITS.forEach(t=>{if(tOwn[t.id])add(t.id,t.name)});
-  if(k!=='c'&&!tval.children.length)add('','(nothing to send)');
+  if(k!=='c'&&tval.children.length===1)add('','(nothing to send)');
+  tval.value=[...tval.options].some(o=>o.value===prev)?prev:'';
 }
 function tbalSet(){$('tbal').textContent=isDev?'🪙 Unlimited (dev)':'🪙 You have '+bank.toLocaleString()+' coins'}
 function pilotList(){const dl=$('tpilots');dl.innerHTML='';try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf('starfall_save_')===0){const n=k.slice(14);if(n!==pkey){const o=document.createElement('option');o.value=n;dl.appendChild(o)}}}}catch(e){}}
@@ -835,7 +847,7 @@ function drawJetBody(i){
   }
 }
 function dropCoins(e){
-  let n=e.t===4?14:e.t===2?3:e.t>=1?2:1;if(gameMode==='protect'&&ptp.dbl>0)n*=2;const v=Math.max(1,Math.round((e.t===4?5:e.t===2?2:1)*(gameMode==='hardcore'?2:1)*(gameMode==='protect'?ptp.cash:1)));if(tOwn.gold&&Math.random()<.5)n++;if(Math.random()<hqFx.coin)n++;if(Math.random()<spdBonus()-1)n++;if(gameMode==='horde'&&Math.random()<.35)n++;
+  let n=e.t===4?14:e.t===2?3:e.t>=1?2:1;if(gameMode==='protect'&&ptp.dbl>0)n*=2;const v=Math.max(1,Math.round((e.t===4?5:e.t===2?2:1)*(gameMode==='hardcore'?2:1)*(gameMode==='protect'?ptp.cash:1)));if(tOwn.gold&&Math.random()<.5)n++;if(civ.coin&&Math.random()<civ.coin)n++;if(Math.random()<hqFx.coin)n++;if(Math.random()<spdBonus()-1)n++;if(gameMode==='horde'&&Math.random()<.35)n++;
   for(let i=0;i<n;i++)coins.push({x:e.x+R(-8,8),y:e.y+R(-8,8),vx:R(-110,110),vy:R(-140,-20),v,age:R(0,3),r:8});
 }
 function drawCoin(c){
@@ -1357,6 +1369,7 @@ addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(state==='story'){if(k==='enter'||k===' ')advanceStory();return}
   if(state==='ptpdiff'){ptpDiffKey(k);return}
+  if(state==='civ'){civKey(k);return}
   if(gameMode==='protect'&&state==='play'&&ptp.phase==='shop'&&ptpKey(k))return;
   if(state==='campselect'){
     if(k==='escape'||k==='b'){state='menu';return}
@@ -1491,6 +1504,7 @@ cv.addEventListener('pointerdown',e=>{
     if(inR(p,hb.casGo)){casPlay();return}
   }
   else if(state==='ptpdiff'){ptpDiffClick(p)}
+  else if(state==='civ'){civClick(p)}
   else if(state==='play'){
     if(gameMode==='protect'&&ptpClick(p))return;
     if(shopOpen){
@@ -1522,7 +1536,7 @@ let score,wave,combo,comboT,banner,bannerT,queue,waveClock,deadT,waveBreak;
 const stars=[];
 for(let i=0;i<110;i++){const z=Math.random();stars.push({x:R(0,W),y:R(0,H),z,s:.4+z*1.6,v:20+z*140})}
 
-function startGame(camp){ptpPayout();
+function startGame(camp){ptpPayout();civ={done:false,coin:0,xp:0};
   if(gameMode==='hq'&&!hqPay())return;
   isCampaign=!!camp;
   if(camp)gameMode='campaign';else if(gameMode==='campaign')gameMode='endless';
@@ -1602,6 +1616,7 @@ function advanceStory(){if(storyNext){const fn=storyNext;storyNext=null;fn()}}
 function nextWave(){
   if(isCampaign)return;
   if(gameMode==='protect')return;
+  if(gameMode==='endless'&&wave+1===50&&!civ.done){state='civ';civSel=0;return} // civilisation map before wave 50
   if(gameMode==='hq'){hqNextWave();return}
   if(gameMode==='bossrush'){wave++;queue=[{t:1,type:4,x:W/2}];waveClock=0;banner='⚠ BOSS '+wave+' ⚠';bannerT=2.2;return}
   if(gameMode==='airwar'){
@@ -1834,7 +1849,7 @@ function update(dt){
       saveAll();state='over';overT=0;
     }else if(gameMode==='hq'&&hqWinCheck()){}
     else{
-      waveBreak-=dt;if(waveBreak<=0){nextWave();if(gameMode==='endless'){if(wave>stats.maxwave)stats.maxwave=wave;if(wave>=5)qProg('wave',wave);checkAch()}waveBreak=gameMode==='blitz'?.3:gameMode==='bossrush'?2.5:1.6}
+      waveBreak-=dt;if(waveBreak<=0){nextWave();if(trialRun&&wave>=trialGoal())trialWin();if(gameMode==='endless'){if(wave>stats.maxwave)stats.maxwave=wave;if(wave>=5)qProg('wave',wave);checkAch()}waveBreak=gameMode==='blitz'?.3:gameMode==='bossrush'?2.5:1.6}
     }
   }
   else if(queue.length){
@@ -2183,6 +2198,7 @@ function draw(){
   else if(state==='achieve')drawAchieve();
   else if(state==='casino')drawCasino();
   else if(state==='ptpdiff')ptpDiffDraw();
+  else if(state==='civ')drawCiv();
   else if(hqIs(state))drawHQ();
   else if(state==='tour')drawTour();
   else if(state==='login'){}
@@ -2409,7 +2425,52 @@ function drawAchieve(){
   });
 }
 function wrapLines(str,n){const out=[];let cur='';for(const w of str.split(' ')){if((cur?cur+' '+w:w).length>n){out.push(cur);cur=w}else cur=cur?cur+' '+w:w}if(cur)out.push(cur);return out}
+/* ---------- Trials and Civilisation map ---------- */
+const TRIAL_GOALS=[10,20,30]; // wave goal for each trial jet, in TRIAL_JETS order
+let trialRun=false,trialIdx=-1,civ={done:false,coin:0,xp:0},civSel=0;
+function trialStart(){
+  trialIdx=TRIAL_JETS.find(i=>!owned[i])??-1;trialRun=trialIdx>=0;
+  gameMode='endless';best=modeBest.endless||0;startGame(false);
+  banner=trialRun?'🏆 TRIAL: reach wave '+trialGoal()+' to win '+JETS[trialIdx].name:'🏆 All trial jets already owned';bannerT=2.5;
+}
+function trialGoal(){const n=TRIAL_JETS.indexOf(trialIdx);return n>=0?TRIAL_GOALS[n]:999}
+function trialWin(){
+  const k=trialIdx;trialRun=false;grantTrialJet(k);state='over';overT=0;
+  banner='🏆 TRIAL CLEARED: '+JETS[k].name+' unlocked!';bannerT=3;
+  sfx('buy',700,.5,'triangle',.07,500);burst(W/2,H/2,'#f4c430',80,340,.9);saveAll();
+}
+const CIV=[
+  {n:'Coastal Cities',d:'+50% chance of extra coin drops for this run',f(){civ.coin=.5}},
+  {n:'Research Labs',d:'+50% XP for this run',f(){civ.xp=.5}},
+  {n:'Reserve Fund',d:'+1500 coins now',f(){bank+=1500}}
+];
+const civRect=i=>({x:40,y:230+i*120,w:W-80,h:96});
+function civPick(i){
+  if(!CIV[i])return;CIV[i].f();civ.done=true;state='play';
+  banner='🏛 '+CIV[i].n+' built';bannerT=2;sfx('buy',660,.3,'triangle',.06,400);saveAll();
+}
+function civKey(k){
+  if(k==='1'||k==='2'||k==='3')civPick(+k-1);
+  else if(k==='arrowup'||k==='w')civSel=(civSel+2)%3;
+  else if(k==='arrowdown'||k==='s')civSel=(civSel+1)%3;
+  else if(k==='enter'||k===' ')civPick(civSel);
+}
+function civClick(p){for(let i=0;i<CIV.length;i++)if(inR(p,civRect(i))){civPick(i);return}}
+function drawCiv(){
+  ctx.fillStyle='rgba(5,6,15,.9)';ctx.fillRect(0,0,W,H);
+  text('CIVILISATION',W/2,150,28,'#4ade80','center','700');
+  text('Wave 50 reached. Choose what to build.',W/2,190,14,'#9bb','center','600');
+  CIV.forEach((c,i)=>{
+    const r=civRect(i);rr(r.x,r.y,r.w,r.h,14);
+    ctx.fillStyle=i===civSel?'rgba(74,222,128,.25)':'rgba(255,255,255,.06)';ctx.fill();
+    ctx.strokeStyle='#4ade80';ctx.lineWidth=2;ctx.stroke();
+    text((i+1)+'. '+c.n,W/2,r.y+38,18,'#fff','center','700');
+    text(c.d,W/2,r.y+66,13,'#cfe','center','600');
+  });
+}
 function startMode(id){
+  trialRun=false;
+  if(id==='trial'){trialStart();return}
   if(id==='hq')id='endless';
   if(id==='story'){storyActive=true;gameMode='story';best=modeBest.story||0;state='campselect';campSel=Math.min(PROG(),CAMP().length-1);return}
   if(id==='campaign'){storyActive=false;gameMode='campaign';best=modeBest.campaign||0;state='campselect';campSel=Math.min(PROG(),CAMP().length-1);return}
@@ -2482,6 +2543,7 @@ function drawStory(){
 /* ---------- loop ---------- */
 let last=performance.now();
 function frame(t){
+  bank=Math.floor(Number(bank)||0);runCoins=Math.floor(Number(runCoins)||0); // coins are always whole numbers
   {const inb=state==='play'||state==='pause'||state==='over',wf=inb?(ww2On()?'grayscale(.6) contrast(1.08)':ww1On()?'sepia(.65) contrast(1.05)':''):'';if(cv._wf!==wf){cv.style.filter=wf;cv._wf=wf}}
   const rdt=Math.min(.033,(t-last)/1000);last=t;
   slowT=Math.max(0,slowT-rdt);
