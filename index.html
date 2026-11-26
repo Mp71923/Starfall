@@ -118,6 +118,15 @@
   #help p,#news p{margin:4px 0}
   #help kbd,#news kbd{padding:1px 6px;border-radius:5px;border:1px solid #3a4a9f;background:#070918;font:600 13px ui-monospace,Menlo,Consolas,monospace}
   #help button,#news button{margin-top:16px;width:100%;padding:12px;border:0;border-radius:10px;background:#2d7bff;color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+  #onBtn{position:fixed;top:58px;right:12px;z-index:45;padding:8px 12px;border-radius:999px;border:1px solid #2b3a8f;background:rgba(13,16,48,.9);color:#80ffdb;font:700 13px system-ui,sans-serif;cursor:pointer}
+  #online{position:fixed;inset:0;z-index:56;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,6,15,.92);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+  #online .card{box-sizing:border-box;width:min(380px,100%);padding:20px;border-radius:16px;background:#0d1030;border:1px solid #2b3a8f;color:#e6edff;text-align:center}
+  #online h2{margin:0 0 8px;font-size:22px;letter-spacing:1px;color:#80ffdb}
+  #online .code{margin:8px 0 12px;font:700 28px ui-monospace,Menlo,Consolas,monospace;letter-spacing:4px;color:#ffd166;min-height:34px}
+  #online input{box-sizing:border-box;width:100%;padding:11px;margin:0 0 8px;border-radius:10px;border:1px solid #3a4a9f;background:#070918;color:#fff;font:600 18px ui-monospace,Menlo,Consolas,monospace;text-align:center;text-transform:uppercase;letter-spacing:3px}
+  #online button{box-sizing:border-box;width:100%;padding:12px;margin:0 0 8px;border:0;border-radius:10px;background:#2d7bff;color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+  #online button.alt{background:#26306e}
+  #onMsg{min-height:20px;margin:6px 0 0;font-size:13px;color:#8fb4ff}
 </style>
 </head>
 <body>
@@ -243,6 +252,20 @@
 <div id="asv" aria-hidden="true">💾 Saved</div>
 <div id="live" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
 <div id="toast" role="presentation" hidden></div>
+<button id="onBtn" type="button" hidden>🌐 ONLINE</button>
+<div id="online" hidden>
+  <div class="card">
+    <h2>ONLINE PLAY</h2>
+    <button id="onCreate" type="button">Create game</button>
+    <div class="code" id="onCode">-----</div>
+    <input id="onIn" maxlength="5" placeholder="Enter code" autocomplete="off" aria-label="Join code">
+    <button id="onJoin" type="button" class="alt">Join game</button>
+    <button id="onClose" type="button" class="alt">Close</button>
+    <div id="onMsg" role="status"></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-app-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-database-compat.js"></script>
 <script>
 (()=>{
 let W=480,H=720,arenaZ=1,arenaCur=1;
@@ -1897,7 +1920,7 @@ const bsp=()=>Math.min(300,170+wave*7);
 
 /* ---------- update ---------- */
 function update(dt){
-  time+=dt;hqTick(dt);
+  time+=dt;hqTick(dt);netUi();
   for(const s of stars){s.y+=s.v*dt*(state==='play'?1:.4);if(s.y>H){s.y=-2;s.x=R(0,W)}}
   for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.985;p.vy*=.985;p.life-=dt}
   parts=parts.filter(p=>p.life>0);
@@ -1925,6 +1948,7 @@ function update(dt){
   if(state!=='play')return;
 
   ptpUpdate(dt);
+  netUpdate(dt);
   /* player */
   if(!P.dead){
     let mx=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0);
@@ -2252,7 +2276,7 @@ function draw(){
   ctx.globalAlpha=1;
 
   if(state==='play'||state==='pause'||state==='over'){
-    pups.forEach(drawPU);coins.forEach(drawCoin);
+    pups.forEach(drawPU);coins.forEach(drawCoin);netDraw();
     if(state==='play'){
       for(const q of queue){
         const rem=q.t-waveClock;if(rem>.9)break;
@@ -2833,6 +2857,94 @@ function drawCiv(){
     text((i+1)+'. '+c.n,W/2,r.y+38,18,'#fff','center','700');
     text(c.d,W/2,r.y+66,13,'#cfe','center','600');
   });
+}
+/* ---------- ONLINE (stage 1: join codes, shared ship position, Firebase Realtime Database) ---------- */
+const FB_CONFIG={apiKey:"AIzaSyB4Wo0a2Z9mjY10SZfjXRVUky-oji2d8S0",authDomain:"starfall-8e7e9.firebaseapp.com",databaseURL:"https://starfall-8e7e9-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"starfall-8e7e9",storageBucket:"starfall-8e7e9.firebasestorage.app",messagingSenderId:"957618627680",appId:"1:957618627680:web:70eb46a83742c933db4f05"};
+const NET={db:null,ref:null,role:'',code:'',ok:false,remote:null,sendT:0,listeners:[]};
+const NET_CHARS='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const NET_SEND_EVERY=.05;
+function netMsg(t){const m=$('onMsg');if(m)m.textContent=t}
+function netErr(e){return (e&&(e.code||e.message))||'unknown error'}
+function netDb(){
+  if(NET.db)return NET.db;
+  if(typeof firebase==='undefined')return null;
+  try{if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);NET.db=firebase.database();return NET.db}catch(e){return null}
+}
+function netWatch(other){
+  const r=NET.ref.child(other);
+  const f=s=>{
+    const v=s.val();
+    if(v&&typeof v.x==='number'){
+      NET.remote={x:v.x,y:v.y,nm:v.nm||'Partner'};
+      if(!NET.ok){NET.ok=true;netMsg(NET.role==='host'?'Player joined! Start a game to play together.':'Connected! Start a game to play together.')}
+    }else if(NET.ok){NET.ok=false;NET.remote=null;netMsg('The other player left.')}
+  };
+  r.on('value',f);NET.listeners.push([r,'value',f]);
+}
+function netClose(){
+  try{
+    if(NET.ref&&NET.role){
+      NET.ref.child(NET.role).onDisconnect().cancel();
+      NET.ref.child(NET.role).remove();
+      if(NET.role==='host')NET.ref.remove();
+    }
+  }catch(e){}
+  for(const [r,ev,f] of NET.listeners){try{r.off(ev,f)}catch(e){}}
+  NET.listeners=[];NET.ref=null;NET.role='';NET.code='';NET.ok=false;NET.remote=null;
+  const c=$('onCode');if(c)c.textContent='-----';
+}
+function netCreate(){
+  const db=netDb();
+  if(!db){netMsg('Online play needs internet to reach its game service.');return}
+  netClose();
+  const code=Array.from({length:5},()=>NET_CHARS[Math.random()*NET_CHARS.length|0]).join('');
+  NET.role='host';NET.code=code;NET.ref=db.ref('rooms/'+code);
+  $('onCode').textContent=code;
+  netMsg('Creating game…');
+  NET.ref.child('host').set({x:W/2,y:H-110,nm:user||'Pilot'}).then(()=>{
+    NET.ref.child('host').onDisconnect().remove();
+    netMsg('Share this code. Waiting for a player…');
+    netWatch('guest');
+  }).catch(e=>netMsg('Could not create the game: '+netErr(e)));
+}
+function netJoin(){
+  const db=netDb();
+  if(!db){netMsg('Online play needs internet to reach its game service.');return}
+  const code=($('onIn').value||'').trim().toUpperCase();
+  if(code.length!==5){netMsg('Enter the 5-letter code from the host.');return}
+  netClose();
+  netMsg('Joining…');
+  const ref=db.ref('rooms/'+code);
+  ref.child('host').once('value').then(s=>{
+    if(!s.val()){netMsg('No game found with that code.');return}
+    NET.role='guest';NET.code=code;NET.ref=ref;$('onCode').textContent=code;
+    return ref.child('guest').set({x:W/2,y:H-110,nm:user||'Pilot'}).then(()=>{
+      ref.child('guest').onDisconnect().remove();
+      netWatch('host');
+    });
+  }).catch(e=>netMsg('Could not join: '+netErr(e)));
+}
+function netUpdate(dt){
+  if(!NET.ok||!NET.ref||!NET.role||state!=='play'||!P||P.dead)return;
+  NET.sendT-=dt;if(NET.sendT>0)return;NET.sendT=NET_SEND_EVERY;
+  NET.ref.child(NET.role).set({x:Math.round(P.x),y:Math.round(P.y),nm:user||'Pilot'});
+}
+function netDraw(){
+  if(!NET.remote||state!=='play')return;
+  const r=NET.remote;
+  ctx.save();ctx.globalAlpha=.85;ctx.shadowColor='#80ffdb';ctx.shadowBlur=12;ctx.fillStyle='#80ffdb';
+  ctx.beginPath();ctx.moveTo(r.x,r.y-16);ctx.lineTo(r.x-12,r.y+12);ctx.lineTo(r.x+12,r.y+12);ctx.closePath();ctx.fill();
+  ctx.shadowBlur=0;ctx.restore();
+  text(r.nm,r.x,r.y-26,11,'#80ffdb','center','700');
+}
+function netUi(){const b=$('onBtn');if(b)b.hidden=state==='play'||state==='pause'||state==='over'||state==='login'}
+function netInit(){
+  $('onBtn').addEventListener('click',()=>{$('online').hidden=false;netMsg(NET.ok?'Connected.':'Create a game, or enter a code to join.')});
+  $('onCreate').addEventListener('click',netCreate);
+  $('onJoin').addEventListener('click',netJoin);
+  $('onClose').addEventListener('click',()=>{$('online').hidden=true});
+  $('online').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape')$('online').hidden=true});
+  $('onIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();netJoin()}});
 }
 function startMode(id){
   trialRun=false;
@@ -4708,6 +4820,7 @@ function ptpPayout(){
 /* ---------- end PROTECT THE PLANET ---------- */
 
 startGame(false);state='login';
+netInit();
 requestAnimationFrame(frame);
 })();
 </script>
