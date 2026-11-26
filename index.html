@@ -43,6 +43,43 @@
   #tnote{display:block;margin-top:10px;color:#6c78a8;font-size:11px;line-height:1.4}
 
   :root{color-scheme:dark}
+  #login .card,#trade .card,#sv .card{background:linear-gradient(160deg,#10143d,#0a0d28);box-shadow:0 0 60px rgba(80,120,255,.28),inset 0 1px 0 rgba(255,255,255,.06)}
+  #login h1{background:linear-gradient(90deg,#8fb4ff,#ffd166);-webkit-background-clip:text;background-clip:text;color:transparent}
+  #login button,#trade button,#sv button{transition:filter .15s,transform .1s}
+  #login button:hover,#trade button:hover,#sv button:hover{filter:brightness(1.15)}
+  #lpwrap{position:relative}#lpwrap input{padding-right:44px}
+  #lshow{position:absolute;right:6px;top:4px;width:36px!important;padding:6px!important;background:transparent!important;font-size:16px!important}
+  #lcaps{min-height:14px;margin:-4px 0 6px;color:#ffd166;font-size:12px}
+  #trade .chips{display:flex;gap:6px;margin:-2px 0 10px}
+  #trade .chips button{flex:1;padding:7px 0;border:1px solid #2b3a8f;border-radius:8px;background:#070918;color:#8fb4ff;font-size:12px;font-weight:700;cursor:pointer}
+  #trade .bal{margin:0 0 10px;color:#ffd166;font-size:13px;font-weight:700}
+  #tout{text-align:center;font-size:20px!important;letter-spacing:2px;height:auto!important;padding:14px 8px!important;color:#80ffdb!important;font-weight:700}
+  #tin{text-align:center;font-size:18px!important;letter-spacing:2px;height:auto!important;padding:14px 8px!important;text-transform:uppercase}
+  #sv .stat{margin:0 0 8px;font-size:12px;color:#80ffdb}
+  #asv{position:fixed;left:12px;top:12px;z-index:30;padding:5px 10px;border-radius:999px;background:rgba(13,16,48,.85);border:1px solid #2b3a8f;color:#80ffdb;font:600 12px system-ui,sans-serif;opacity:0;transition:opacity .4s;pointer-events:none}
+  #asv.on{opacity:1}
+  /* decorated overlays: login, trade, save backup */
+  #login,#trade,#sv{background:radial-gradient(ellipse at 20% 15%,rgba(80,120,255,.28),transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(190,90,255,.24),transparent 55%),rgba(5,6,15,.9);overflow:hidden}
+  #login::before,#trade::before,#sv::before{content:"";position:absolute;inset:-50%;pointer-events:none;opacity:.7;
+    background-image:radial-gradient(1.5px 1.5px at 20px 30px,#fff,transparent),radial-gradient(1px 1px at 90px 80px,#cfe0ff,transparent),radial-gradient(1.5px 1.5px at 150px 20px,#ffe9a8,transparent),radial-gradient(1px 1px at 60px 140px,#fff,transparent);
+    background-size:180px 180px;animation:ovDrift 60s linear infinite}
+  @keyframes ovDrift{to{transform:translate3d(-180px,180px,0)}}
+  #login .card,#trade .card,#sv .card{position:relative;z-index:1;border:1px solid transparent;
+    background:linear-gradient(160deg,#10143d,#0a0d28) padding-box,linear-gradient(var(--ang,0deg),#2d7bff,#b36bff,#ffd166,#2d7bff) border-box;animation:ovSpin 6s linear infinite,ovIn .35s ease-out}
+  @property --ang{syntax:"<angle>";inherits:false;initial-value:0deg}
+  @keyframes ovSpin{to{--ang:360deg}}
+  @keyframes ovIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+  #login .card::before,#trade .card::before,#sv .card::before{content:"";position:absolute;left:50%;top:-1px;width:46%;height:2px;transform:translateX(-50%);background:linear-gradient(90deg,transparent,#8fb4ff,transparent);filter:drop-shadow(0 0 6px #8fb4ff)}
+  #login .card::after,#trade .card::after,#sv .card::after{content:"✦";position:absolute;right:12px;top:8px;color:#ffd166;font-size:14px;opacity:.8;animation:ovTw 2.4s ease-in-out infinite}
+  @keyframes ovTw{50%{opacity:.25;transform:scale(.7) rotate(40deg)}}
+  #login h1::before{content:"✈";display:block;font-size:30px;margin-bottom:2px;-webkit-text-fill-color:initial;animation:ovFly 3s ease-in-out infinite}
+  @keyframes ovFly{50%{transform:translateY(-5px) rotate(-6deg)}}
+  #trade h2,#sv h2{background:linear-gradient(90deg,#8fb4ff,#ffd166);-webkit-background-clip:text;background-clip:text;color:transparent}
+  #login input:focus,#trade input:focus,#trade select:focus,#trade textarea:focus{box-shadow:0 0 0 3px rgba(107,140,255,.25)}
+  #login button,#trade button.act,#sv button:not(.alt){background:linear-gradient(180deg,#4d92ff,#2a67d8);box-shadow:0 4px 14px rgba(45,123,255,.35)}
+  #login #ltabs button:not(.on){background:#070918;box-shadow:none}
+  #tout::placeholder{font-size:13px;letter-spacing:0;font-weight:500}
+  @media (prefers-reduced-motion:reduce){#login::before,#trade::before,#sv::before,#login .card,#trade .card,#sv .card,#login h1::before,#login .card::after,#trade .card::after,#sv .card::after{animation:none}}
   [hidden]{display:none!important}
   body{background:radial-gradient(ellipse at 50% 28%,#141a4d 0%,#080a22 55%,#05060f 100%)}
   #bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
@@ -94,27 +131,31 @@
   <h1>STARFALL</h1><p style="margin:-4px 0 10px;color:#ffd166;font-style:italic;letter-spacing:.06em">Ride the falling stars.</p>
   <div id="ltabs" role="tablist" aria-label="Account"><button id="tLogin" type="button" role="tab" aria-selected="true" class="on">Log in</button><button id="tCreate" type="button" role="tab" aria-selected="false">Create account</button></div>
   <input id="lu" aria-label="Pilot name" type="text" maxlength="16" placeholder="Pilot name" autocomplete="off" autocapitalize="off" spellcheck="false">
-  <div id="lpw"><input id="lp" aria-label="Password" type="password" placeholder="Password" autocomplete="off"></div>
+  <div id="lpw"><div id="lpwrap"><input id="lp" aria-label="Password" type="password" placeholder="Password" autocomplete="off"><button id="lshow" type="button" aria-label="Show password" title="Show / hide">👁</button></div><div id="lcaps"></div></div>
   <div id="lpw2"><input id="lp2" aria-label="Confirm password" type="password" placeholder="Confirm password" autocomplete="off"></div>
   <div id="lhint"></div>
   <button id="lb">Log in</button>
   <div id="le" role="alert"></div>
-  <small>Progress and passwords are saved only in this browser. There is no password reset, and clearing site data deletes the account.</small>
+  <small>🔒 Progress saves automatically. Progress and passwords are saved only in this browser. There is no password reset, and clearing site data deletes the account.</small>
 </div></div>
 <div id="trade" role="dialog" aria-modal="true" aria-label="Trade"><div class="card">
   <h2>TRADE</h2>
-  <div class="tabs"><button id="tsend" class="on">Send</button><button id="trecv">Redeem</button></div>
+  <div class="tabs"><button id="tsend" class="on">📤 Send</button><button id="trecv">📥 Redeem</button></div>
   <div id="psend">
-    <input id="tto" aria-label="Recipient pilot name" type="text" maxlength="16" placeholder="Recipient pilot name" autocomplete="off" autocapitalize="off" spellcheck="false">
-    <select id="tkind" aria-label="What to send"><option value="c">Coins</option><option value="j">Jet</option><option value="t">Trait</option></select>
+    <div class="bal" id="tbal"></div>
+    <input id="tto" list="tpilots" aria-label="Recipient pilot name" type="text" maxlength="16" placeholder="Send to (pilot name)" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <datalist id="tpilots"></datalist>
+    <select id="tkind" aria-label="What to send"><option value="c">🪙 Coins</option><option value="j">✈ Jet</option><option value="t">✨ Trait</option></select>
     <input id="tamt" aria-label="Coin amount" type="number" min="1" placeholder="Coin amount">
+    <div class="chips" id="tchips"><button type="button" data-a="100">100</button><button type="button" data-a="1000">1K</button><button type="button" data-a="10000">10K</button><button type="button" data-a="max">Max</button></div>
     <select id="tval" aria-label="Item to send"></select>
     <button class="act" id="tmake">Create trade code</button>
-    <textarea id="tout" aria-label="Your trade code" readonly placeholder="Your trade code will appear here"></textarea>
+    <textarea id="tout" aria-label="Your trade code" readonly rows="1" placeholder="Your short code appears here"></textarea>
     <button class="act" id="tcopy">Copy code</button>
   </div>
   <div id="precv" style="display:none">
-    <textarea id="tin" aria-label="Trade code to redeem" placeholder="Paste a trade code here" spellcheck="false"></textarea>
+    <textarea id="tin" aria-label="Trade code to redeem" rows="1" placeholder="SF-XXXX-XXXX-XXXX" spellcheck="false"></textarea>
+    <button class="ghost" id="tpaste" style="margin-bottom:10px">📋 Paste from clipboard</button>
     <button class="act" id="tredeem">Redeem code</button>
   </div>
   <div id="tmsg" role="status"></div>
@@ -132,7 +173,10 @@
 <div id="dtw" role="alertdialog" aria-live="assertive" hidden><div class="card" style="text-align:center"><h2>Developer tools detected</h2><p>Please close developer tools to keep playing Starfall.</p></div></div>
 <div id="news" role="dialog" aria-modal="true" aria-labelledby="nTitle" hidden>
   <div class="card" id="nCard" tabindex="-1">
-    <h2 id="nTitle">What's new: Story Mode</h2>
+    <h2 id="nTitle">What's new: GOATS Pack</h2>
+    <h3>Limited edition</h3>
+    <ul><li>New Goats Pack (3,000 coins) with seven special jets: Sonic Singh, Potato Stix, Homelessini, Ayun, the new leo(leo xiao)xiao (jade xiao dumpling volleys), and two ultra-rare dev jets with infinite everything</li></ul>
+    <h3>Story Mode</h3>
     <h3>Wings of War</h3>
     <ul><li>New Story Mode: 11 chapters following the Whitaker family from 1916 to 1965, from biplanes to Spitfires to the jet age</li><li>Find it in Game Modes. It has its own progress, separate from the Campaign</li></ul>
     <h3>WW2 update</h3>
@@ -178,12 +222,13 @@
 <div id="sv" role="dialog" aria-modal="true" aria-labelledby="svTitle" hidden>
   <div class="card">
     <h2 id="svTitle">Save backup</h2>
-    <p>Export gives you a code for this pilot. Paste a code and press Import to restore it on any browser or device.</p>
+    <p>Your game <b>auto-saves</b> in this browser. Export a backup code or file to move it to another browser or device.</p><div class="stat" id="svs"></div>
     <textarea id="svt" aria-label="Save code" spellcheck="false" placeholder="Save code appears here, or paste one to import"></textarea>
-    <div class="row"><button id="svExp" type="button">Export</button><button id="svCopy" type="button" class="alt">Copy</button><button id="svImp" type="button">Import</button><button id="svClose" type="button" class="alt">Close</button></div>
+    <div class="row"><button id="svExp" type="button">📤 Export</button><button id="svCopy" type="button" class="alt">📋 Copy</button><button id="svImp" type="button">📥 Import</button></div><div class="row"><button id="svDl" type="button" class="alt">⬇ Download file</button><button id="svUp" type="button" class="alt">📁 Load file</button><button id="svClose" type="button" class="alt">Close</button></div><input type="file" id="svf" accept=".txt,.starfall" hidden>
     <div id="svm" role="status"></div>
   </div>
 </div>
+<div id="asv" aria-hidden="true">💾 Saved</div>
 <div id="live" class="sr" role="status" aria-live="polite" aria-atomic="true"></div>
 <div id="toast" role="presentation" hidden></div>
 <script>
@@ -261,6 +306,18 @@ JETS.push(
   {name:'A6M Zero',rarity:6,desc:'WW2 carrier fighter. Superb speed.',spd:500,hp:5,rate:.55,dmg:2.4,bombs:4,mag:260,wl:3,col:'#c9d1b8',acc:'#ff4d4d',startRapid:3},
   {name:'P-51 Mustang',rarity:6,desc:'WW2 legend. Free revive, 3 drones.',spd:490,hp:7,rate:.5,dmg:2.8,bombs:5,mag:260,wl:3,col:'#b4bcc4',acc:'#ffd166',phoenix:true,summon:3,pierce:true}
 );
+const DL=JETS.findIndex(j=>j.name==='Drone Lord');
+JETS.push(
+  // GOATS (limited edition, Goats Pack only). Base stats follow Drone Lord; Sonic Singh and Potato Stix hit like Void.
+  {name:'Sonic Singh',rarity:8,goat:true,as:DL,desc:'Every 30s: a volley of table tennis balls (laser damage).',spd:350,hp:5,rate:1,dmg:2.2,bombs:3,mag:160,wl:1,col:'#2d6bff',acc:'#ffe14d',summon:3,periodic:'ball'},
+  {name:'Potato Stix',rarity:8,goat:true,as:DL,desc:'Every 30s: a volley of potato stix (laser damage).',spd:350,hp:5,rate:1,dmg:2.2,bombs:3,mag:160,wl:1,col:'#e8b84a',acc:'#7a4b12',summon:3,periodic:'stix'},
+  {name:'Homelessini',rarity:8,goat:true,as:DL,desc:'Has less durability.',spd:350,hp:2,rate:1,dmg:1.4,bombs:3,mag:160,wl:1,col:'#6b5b4b',acc:'#cbb89a',summon:3},
+  {name:'Ayun',rarity:8,goat:true,as:DL,desc:'Leaves a special 6564 trail.',spd:350,hp:5,rate:1,dmg:1.4,bombs:3,mag:160,wl:1,col:'#8e44ff',acc:'#e5ccff',summon:3,trail:true},
+  {name:'Mp.dev',rarity:8,goat:true,as:DL,desc:'Infinite everything.',spd:700,hp:5,rate:1,dmg:1.4,bombs:3,mag:2000,wl:4,col:'#00e5ff',acc:'#ffffff',summon:3,infinite:true},
+  {name:'Rbk.dev',rarity:8,goat:true,as:DL,desc:'Infinite everything.',spd:700,hp:5,rate:1,dmg:1.4,bombs:3,mag:2000,wl:4,col:'#ff2d95',acc:'#ffffff',summon:3,infinite:true},
+  {name:'leo(leo xiao)xiao',rarity:8,goat:true,as:DL,desc:'Every 30s: a volley of jade xiao dumplings (laser damage). Leaves a LEO XIAO trail.',spd:350,hp:5,rate:1,dmg:2.2,bombs:3,mag:160,wl:1,col:'#1fbf75',acc:'#eafff3',summon:3,periodic:'xiao',trail:'LEO XIAO',tcol:'#eafff3',tglow:'#1fbf75'}
+);
+const GOATS=JETS.map((j,i)=>j.goat?i:-1).filter(i=>i>=0),GOAT_W=[18,18,26,26,12],GOAT_DEV=1e-7; // each dev jet: 0.00001%
 JETS.push(
   // Story Mode aircraft (not collectable, only flown in Story Mode)
   {name:'Airco DH.2',rarity:7,story:true,look:5,desc:'',spd:290,hp:3,rate:1.1,dmg:1,bombs:1,mag:110,wl:1,col:'#8a7a50',acc:'#d9cfa0'},
@@ -274,8 +331,8 @@ const B2=JETS.findIndex(j=>j.name==='B-2 Spirit'),B2_CHANCE=0.0001,MYTHICS=[B2];
 const WAR=JETS.map((j,i)=>j.rarity===6?i:-1).filter(i=>i>=0),WAR_W=[38,32,24,6];
 const VINT=JETS.map((j,i)=>j.rarity===5?i:-1).filter(i=>i>=0);
 const VINT_W=[55,28,14,3]; // Camel, Fokker, SPAD, Red Baron (percent)
-const RARITY_NAME=['Common','Rare','Epic','Legendary','Mythic','Vintage','Warbird','Story'];
-const RARITY_COL=['#9bb','#4cc9f0','#b86bff','#ffd166','#ff2d55','#d4a373','#8fb996','#e8c9a0'];
+const RARITY_NAME=['Common','Rare','Epic','Legendary','Mythic','Vintage','Warbird','Story','Goat'];
+const RARITY_COL=['#9bb','#4cc9f0','#b86bff','#ffd166','#ff2d55','#d4a373','#8fb996','#e8c9a0','#ffd700'];
 const EVO_MAX=3,EVO_NEED=t=>t+2,EVO_NAME=['','MK II','MK III','MK IV'];
 // Pack definitions: cost + weight table [common, rare, epic, legendary]
 const PACKS=[
@@ -284,7 +341,8 @@ const PACKS=[
   {name:'Ace Pack',     cost:2200, weights:[15,35,40,10],desc:'Strong epics'},
   {name:'Legend Pack',  cost:5000, weights:[0,15,45,40], desc:'Best legends'},
   {name:'Vintage Pack', cost:1500, weights:[0,0,0,0], vintage:true, desc:'WW1 biplanes'},
-  {name:'Warbird Pack', cost:2200, weights:[0,0,0,0], warbird:true, desc:'WW2 fighters'}
+  {name:'Warbird Pack', cost:2200, weights:[0,0,0,0], warbird:true, desc:'WW2 fighters'},
+  {name:'Goats Pack', cost:3000, weights:[0,0,0,0], goat:true, desc:'Limited edition'}
 ];
 let bank=0,owned=Array(JETS.length).fill(false);owned[0]=true;
 let jetStars=Array(JETS.length).fill(0),jetEvo=Array(JETS.length).fill(0),jetDup=Array(JETS.length).fill(0);
@@ -293,6 +351,7 @@ let packSel=0,packReveal=null,packRevealT=0;
 let pityEpic=0,pityLeg=0,pxp=0,plvl=1;
 let runCoins=0,coinPop=0,coins=[],J=JETS[0];
 let campaignProg=0,campLevel=0,isCampaign=false,storyT=0,storyText='',storyNext=null,campSel=0;
+let goatT=30,trailN=[],trailT=0;
 let killCount=0,vampCD=0,missileT=0,laserT=0,missiles=[],summons=[],summonCharges=0,summonCD=0;
 let dailyQ=[],dailyDay='',runUpg={dmg:0,rate:0,mag:0},shopOpen=false;
 let ach={},stats={kills:0,maxwave:0,packs:0};
@@ -365,6 +424,8 @@ function loadProfile(name,dev){
 const sigOf=(k,raw)=>h53('sf-sig::v1::'+k+'::'+raw);
 let tamperMsg=false;
 function writeSave(k,raw){try{localStorage.setItem('starfall_save_'+k,raw);localStorage.setItem('starfall_sig_'+k,sigOf(k,raw))}catch(e){}}
+let lastSave=0,asvT=0;
+function flashSaved(){lastSave=Date.now();const a=document.getElementById('asv');if(!a)return;a.classList.add('on');clearTimeout(asvT);asvT=setTimeout(()=>a.classList.remove('on'),1400)}
 function saveAll(){if(!pkey)return;modeBest[gameMode]=Math.max(modeBest[gameMode]||0,best);try{writeSave(pkey,JSON.stringify({bank:isDev?999999999:bank,owned,stars:jetStars,evo:jetEvo,dup:jetDup,sel:jetSel,traits:Object.keys(tOwn).filter(k=>tOwn[k]),got:got.slice(-300),camp:campaignProg,sp:storyProg,pe:pityEpic,pl:pityLeg,xp:pxp,lv:plvl,dday:dailyDay,dq:dailyQ,ach,stats,mb:modeBest,gm:gameMode,spd:gameSpd,hq:hqSave()}))}catch(e){}}
 function checkAch(){
   const vals={kills:stats.kills,maxwave:stats.maxwave,packs:stats.packs,stars:jetStars.reduce((a,b)=>a+(b|0),0),camp:campaignProg,plvl:plvl,bank:bank};
@@ -578,11 +639,26 @@ const CAMPAIGN=[
 const TSALT='starfall-trade-v1';
 const b64=x=>btoa(x).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const unb64=x=>atob(x.replace(/-/g,'+').replace(/_/g,'/'));
-function encodeTrade(o){const pl=b64(JSON.stringify(o));return 'SF1-'+pl+'-'+h53(TSALT+pl)}
-function decodeTrade(code){
-  const m=/^SF1-([A-Za-z0-9_-]+)-([a-z0-9]+)$/.exec(String(code).replace(/\s+/g,''));
-  if(!m||h53(TSALT+m[1])!==m[2])return null;
-  try{const o=JSON.parse(unb64(m[1]));return(o&&o.i&&o.t&&o.k)?o:null}catch(e){return null}
+const TK36=n=>Math.floor(n).toString(36).toUpperCase();
+const tchk=(body,key)=>h53(TSALT+'2'+body+'|'+key).slice(-4).toUpperCase().padStart(4,'0');
+function encodeTrade(o){ // short code: SF-<kind><value>-<nonce>-<check bound to the recipient>
+  const v=o.k==='t'?TK36(TRAITS.findIndex(t=>t.id===o.v)):TK36(+o.v),body=o.k.toUpperCase()+v+'-'+o.i;
+  return 'SF-'+body+'-'+tchk(body,o.t);
+}
+function decodeTrade(code,key){
+  const raw=String(code).trim();
+  if(/^SF1-/.test(raw)){ // old long codes still work
+    const m=/^SF1-([A-Za-z0-9_-]+)-([a-z0-9]+)$/.exec(raw.replace(/\s+/g,''));
+    if(!m||h53(TSALT+m[1])!==m[2])return null;
+    try{const o=JSON.parse(unb64(m[1]));return(o&&o.i&&o.t&&o.k)?o:null}catch(e){return null}
+  }
+  const m=/^SF-?([CJT])([0-9A-Z]{1,6})-?([0-9A-Z]{4})-?([0-9A-Z]{4})$/.exec(raw.toUpperCase().replace(/[\s_.]+/g,'-').replace(/-+/g,'-'));
+  if(!m)return null;
+  const body=m[1]+m[2]+'-'+m[3];
+  if(tchk(body,key)!==m[4])return{bad:'who'};
+  const n=parseInt(m[2],36),k=m[1].toLowerCase();
+  const v=k==='t'?(TRAITS[n]&&TRAITS[n].id):n;
+  return v===undefined||v===null?null:{i:m[3],t:key,f:'a friend',k,v};
 }
 const $=id=>document.getElementById(id);
 const trEl=$('trade'),tkind=$('tkind'),tamt=$('tamt'),tval=$('tval'),tto=$('tto'),tout=$('tout'),tin=$('tin'),tmsg=$('tmsg'),tnote=$('tnote');
@@ -599,10 +675,12 @@ function fillVals(){
   if(k==='t')TRAITS.forEach(t=>{if(tOwn[t.id])add(t.id,t.name)});
   if(k!=='c'&&!tval.children.length)add('','(nothing to send)');
 }
+function tbalSet(){$('tbal').textContent=isDev?'🪙 Unlimited (dev)':'🪙 You have '+bank.toLocaleString()+' coins'}
+function pilotList(){const dl=$('tpilots');dl.innerHTML='';try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf('starfall_save_')===0){const n=k.slice(14);if(n!==pkey){const o=document.createElement('option');o.value=n;dl.appendChild(o)}}}}catch(e){}}
 function openTrade(){
   state='trade';trEl.style.display='flex';tout.value='';tin.value='';tamt.value='';
   tnote.textContent=isDev?'DEV: your trades are free and nothing is removed from your account.':'Creating a code removes the item from your account. Only the named pilot can redeem it, once.';
-  showPane('send');fillVals();
+  showPane('send');fillVals();tbalSet();pilotList();
 }
 function closeTrade(){trEl.style.display='none';state='menu'}
 function makeCode(){
@@ -625,15 +703,15 @@ function makeCode(){
     else if(k==='j'){owned[v]=false;if(jetSel===v){jetSel=0;hIdx=0}}
     else tOwn[v]=false;
   }
-  const o={i:Math.random().toString(36).slice(2,8)+Date.now().toString(36),f:user,t:to.toLowerCase(),k,v};
-  tout.value=encodeTrade(o);saveAll();fillVals();
+  const o={i:'',f:user,t:to.toLowerCase(),k,v};
+  o.i=Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.random()*32|0]).join('');tout.value=encodeTrade(o);saveAll();fillVals();tbalSet();
   tmsgSet('Code created. Send it to '+to+'.',true);
 }
 function redeemCode(){
-  const o=decodeTrade(tin.value);
+  const o=decodeTrade(tin.value,pkey);
   if(!o){tmsgSet('That code is not valid');return}
-  if(o.t!==pkey){tmsgSet('This code is for a different pilot');return}
-  if(got.includes(o.i)){tmsgSet('This code was already redeemed');return}
+  if(o.bad||o.t!==pkey){tmsgSet('This code is for a different pilot (or was mistyped)');return}
+  if(got.includes(o.i+o.k+o.v)){tmsgSet('This code was already redeemed');return}
   let label;
   if(o.k==='c'){
     const v=Math.floor(+o.v);if(!(v>=1&&v<=1000000)){tmsgSet('That code is not valid');return}
@@ -647,8 +725,8 @@ function redeemCode(){
     if(tOwn[t.id]){tmsgSet('You already have '+t.name+' (code not used)');return}
     tOwn[t.id]=true;label=t.name;
   }else{tmsgSet('That code is not valid');return}
-  got.push(o.i);if(got.length>300)got.shift();
-  saveAll();tin.value='';fillVals();
+  got.push(o.i+o.k+o.v);if(got.length>300)got.shift();
+  saveAll();tin.value='';fillVals();tbalSet();
   tmsgSet('Received '+label+' from '+o.f+'!',true);
 }
 function copyCode(){
@@ -664,24 +742,31 @@ $('tmake').addEventListener('click',makeCode);
 $('tcopy').addEventListener('click',copyCode);
 $('tredeem').addEventListener('click',redeemCode);
 $('tclose').addEventListener('click',closeTrade);
+$('tchips').addEventListener('click',e=>{const a=e.target.dataset&&e.target.dataset.a;if(!a)return;tamt.value=a==='max'?(isDev?1000000:Math.min(bank,1000000)):a});
+$('tpaste').addEventListener('click',()=>{try{navigator.clipboard.readText().then(t=>{tin.value=t.trim();tmsgSet('Pasted',true)},()=>tmsgSet('Press Ctrl+V in the box instead'))}catch(e){tmsgSet('Press Ctrl+V in the box instead')}});
+tin.addEventListener('input',()=>{tin.value=tin.value.replace(/\n/g,'')});
 trEl.addEventListener('keydown',e=>{if(e.key==='Escape')closeTrade()});
 
 lb.addEventListener('click',doLogin);
+$('lshow').addEventListener('click',()=>{const h=lp.type==='password';lp.type=h?'text':'password';lp2.type=lp.type;$('lshow').textContent=h?'🙈':'👁'});
+for(const el of [lp,lp2])el.addEventListener('keyup',e=>{try{$('lcaps').textContent=e.getModifierState&&e.getModifierState('CapsLock')?'⚠ Caps Lock is on':''}catch(_){}});
 lu.addEventListener('input',()=>{updatePw();le.textContent=''});
 tLogin.addEventListener('click',()=>setLMode('login'));tCreate.addEventListener('click',()=>setLMode('create'));
 for(const el of [lu,lp,lp2])el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.stopPropagation();e.preventDefault();doLogin()}});
 try{lu.value=localStorage.getItem('starfall_last')||''}catch(e){}
 updatePw();setTimeout(()=>{try{lu.focus()}catch(e){}},50);
 addEventListener('pagehide',saveAll);
+setInterval(()=>{if(pkey&&state!=='login'&&!document.hidden){saveAll();flashSaved()}},10000);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)saveAll()});
 
 function jetStats(j,idx){
+  if(j.infinite)return[9,9,9,9,9,9];
   const m=idx!=null?starMult(idx):1;
   return[(j.spd/480)*m,(j.hp/8)*m,(1/j.rate)/1.55*m,(j.dmg/2)*m,j.bombs/5,j.mag/260];
 }
 function drawJetBody(i){
   const j=JETS[i],c=j.col,a=j.acc;
-  if(j.as!=null)return drawJetBody(j.as);
+  if(j.as!=null){const t=JETS[j.as],sc=t.col,sa=t.acc;t.col=j.col;t.acc=j.acc;try{drawJetBody(j.as)}finally{t.col=sc;t.acc=sa}return}
   const lk=j.look!=null?j.look:j.rarity;
   if(lk===6){
     const zero=j.name==='A6M Zero',mus=j.name==='P-51 Mustang';
@@ -1046,6 +1131,7 @@ function drawCasino(){
 }
 
 function rollPack(pack){
+  if(pack.goat){const r0=Math.random();let idx;if(r0<GOAT_DEV)idx=GOATS[4];else if(r0<2*GOAT_DEV)idx=GOATS[5];else{let r=Math.random()*GOAT_W.reduce((a,b)=>a+b,0),k=0;for(;k<GOAT_W.length-1;k++){r-=GOAT_W[k];if(r<0)break}idx=k<4?GOATS[k]:GOATS[6]}return{idx,rarity:8,dup:owned[idx]}}
   if(Math.random()<B2_CHANCE){const m=MYTHICS[(Math.random()*MYTHICS.length)|0];return{idx:m,rarity:4,dup:owned[m]}}
   if(pack.warbird){let r=Math.random()*WAR_W.reduce((a,b)=>a+b,0),k=0;for(;k<WAR.length-1;k++){r-=WAR_W[k];if(r<0)break}const idx=WAR[k];return{idx,rarity:6,dup:owned[idx]}}
   if(pack.vintage){let r=Math.random()*VINT_W.reduce((a,b)=>a+b,0),k=0;for(;k<VINT.length-1;k++){r-=VINT_W[k];if(r<0)break}const idx=VINT[k];return{idx,rarity:5,dup:owned[idx]}}
@@ -1070,7 +1156,7 @@ function openPack(){
   const result=rollPack(pack);
   if(!result){if(!isDev)bank+=pack.cost;return}
   packReveal=result;packRevealT=2.8;
-  if(!pack.vintage&&!pack.warbird){pityEpic++;pityLeg++;
+  if(!pack.vintage&&!pack.warbird&&!pack.goat){pityEpic++;pityLeg++;
   if(result.rarity>=2&&result.rarity<5)pityEpic=0;
   if(result.rarity>=3&&result.rarity<5)pityLeg=0}if(result.rarity>=4)say('Mythic! You pulled the '+JETS[result.idx].name+'!');
   stats.packs++;qProg('pack',1);checkAch();
@@ -1079,7 +1165,7 @@ function openPack(){
     burst(W/2,H*.32,RARITY_COL[result.rarity],60,360,1);ring(W/2,H*.32,RARITY_COL[result.rarity],220,.7,6);flash=.35;
     sfx('buy',520,.5,'triangle',.08,800);
   }else{
-    const refund=[80,200,500,1200,5000,700,900][result.rarity];jetDup[result.idx]++;
+    const refund=[80,200,500,1200,5000,700,900,0,1500][result.rarity];jetDup[result.idx]++;
     bank+=refund;
     // duplicates also give star progress chance
     float(W/2,H*.5,'+1 COPY','#ffd166');
@@ -1170,7 +1256,7 @@ function drawHangar(){
         ctx.fillStyle=g;ctx.fillRect(BX+nw,y-3,Math.min(v-1,BMAX-1)*nw,6);ctx.restore();
       }
       ctx.fillStyle='rgba(255,255,255,.55)';ctx.fillRect(BX+nw-1,y-5,1.5,10);   // tick = normal maximum
-      text(Math.round(v*100)+'%',BX+BWID+8,y,9,v>1?'#ff7a90':'#8aa','left','700');
+      text(j.infinite?'∞':Math.round(v*100)+'%',BX+BWID+8,y,j.infinite?14:9,v>1?'#ff7a90':'#8aa','left','700');
     }
   }
   // dots
@@ -1225,7 +1311,7 @@ function drawHangar(){
     ctx.restore();
     text(rj.name.toUpperCase(),W/2,H*.58,30,'#fff');
     text(rj.desc,W/2,H*.64,14,'#9bb','center','500');
-    if(packReveal.dup)text('+1 copy · Refund 🪙 '+[80,200,500,1200,5000,700,900][rrar],W/2,H*.72,16,'#ffd166');
+    if(packReveal.dup)text('+1 copy · Refund 🪙 '+[80,200,500,1200,5000,700,900,0,1500][rrar],W/2,H*.72,16,'#ffd166');
     else text('Added to your hangar!',W/2,H*.72,16,'#80ffdb');
     if(packRevealT<1.5)text('tap to continue',W/2,H*.85,14,'#8aa');
   }
@@ -1449,7 +1535,7 @@ function startGame(camp){
   enemies=[];pBul=[];eBul=[];parts=[];pups=[];floaters=[];rings=[];missiles=[];summons=[];
   dScore=0;scorePop=0;hpShake=0;fadeIn=1;slowT=0;combPop=0;coins=[];runCoins=0;coinPop=0;
   score=0;wave=0;combo=0;comboT=0;deadT=0;queue=[];waveClock=0;waveBreak=1.2;banner='';bannerT=0;
-  killCount=0;vampCD=0;missileT=0;laserT=J.startLaser||0;
+  killCount=0;vampCD=0;missileT=0;laserT=J.startLaser||0;goatT=30;trailN=[];trailT=0;
   summonCharges=1+(tOwn.summoner?2:0)+(J.summon||0);
   summonCD=0;runUpg={dmg:0,rate:0,mag:0};shopOpen=false;
   if(J.summon){for(let i=0;i<J.summon;i++)spawnSummon(true)}
@@ -1558,6 +1644,7 @@ function nextWave(){
   }
 }
 
+const EPAL=[null,['#4dd0ff','#c8f1ff'],['#7dff6b','#d4ffc9'],['#ffd23f','#fff1b0'],['#b36bff','#e6ccff'],['#ff7a1a','#ffd1a0'],['#ff4fa3','#ffc2e0'],['#2ee6c8','#bff7ee'],['#e8edf7','#ffffff']];
 function spawn(type,x){
   const e={t:type,x,y:-40,vx:0,vy:0,hp:1,max:1,r:16,age:0,fire:R(.5,1.5),score:100,flash:0,x0:x,pat:0};
   if(type===0){e.vy=R(90,130)+wave*3;e.hp=e.max=1;e.r=15;e.score=100}
@@ -1567,6 +1654,7 @@ function spawn(type,x){
   if(type===4){e.y=-80;e.vy=80;e.hp=e.max=70+wave*(gameMode==='bossrush'?22:14);e.r=50;e.score=5000;e.fire=1.5}
   if(type===4)extBoss(e);
   if(type>=5)extSpawn(e,type);
+  if(type<4||type===5||type===6||type===7)e.pv=storyActive||ww1On()||ww2On()?0:(Math.random()<.2?0:1+Math.floor(Math.random()*(EPAL.length-1)));
   enemies.push(e);
 }
 
@@ -1589,7 +1677,17 @@ function useBomb(){
   for(const e of enemies){e.hp-=(e.t===4?14:99);e.flash=.15;burst(e.x,e.y,'#ffd166',10)}
   for(let i=0;i<60;i++)parts.push({x:P.x,y:P.y,vx:Math.cos(i/60*6.283)*R(200,520),vy:Math.sin(i/60*6.283)*R(200,520),life:.7,max:.7,c:'#8fd3ff',s:3});
 }
+function goatBurst(kind){
+  const d=J.dmg*(P.dmgMul||1)*.7,n=11;
+  for(let i=0;i<n;i++){
+    const x=30+(W-60)*i/(n-1);
+    pBul.push({x,y:P.y-20,vx:0,vy:-760,r:8,dmg:d,pierce:3,hit:null,shot:kind,laser:true});
+  }
+  float(P.x,P.y-40,kind==='ball'?'🏓 TABLE TENNIS!':kind==='xiao'?'🥟 XIAO!':'🥔 POTATO STIX!','#ffd166');shake=8;flash=.15;
+  sfx('boom',200,.3,'sawtooth',.06,-80,80);say(kind==='ball'?'Table tennis balls':kind==='xiao'?'Xiao dumplings':'Potato stix');
+}
 function hurtPlayer(){
+  if(J&&J.infinite)return;
   if(P.inv>0||P.shield>0||P.dead)return;
   P.hp--;P.inv=tOwn.phase?3:1.8;shake=14;combo=0;P.wl=Math.max(1,P.wl-1);hpShake=.5;flash=.25;
   ring(P.x,P.y,'#ff5577',90,.4,5);
@@ -1671,6 +1769,11 @@ function update(dt){
     P.tilt+=((P.x-ox)/Math.max(dt,.001)/400-P.tilt)*Math.min(1,dt*10);
     P.inv=Math.max(0,P.inv-dt);P.rapid=Math.max(0,P.rapid-dt);P.shield=Math.max(0,P.shield-dt);
     for(let i=0;i<2;i++)parts.push({x:P.x+R(-3,3),y:P.y+13,vx:R(-18,18)-P.tilt*50,vy:R(130,230),life:R(.14,.3),max:.3,c:P.rapid>0?'#ffd166':'#ff9a3c',s:R(2,4)});
+    if(J.infinite){P.dmgMul=Math.max(P.dmgMul||1,6);P.rateMul=Math.max(P.rateMul||1,3);P.hp=P.maxhp=Math.max(P.maxhp,5);P.bombs=99;summonCharges=99;P.wl=4;laserT=99;P.rapid=99;P.shield=99}
+    if(J.periodic){goatT-=dt;if(goatT<=0){goatT=30;goatBurst(J.periodic)}}
+    if(J.trail){trailT-=dt;if(trailT<=0){trailT=J.trail===true?.07:.16;trailN.push({x:P.x+R(-8,8),y:P.y+16,life:1})}}
+    for(const t of trailN){t.y+=150*dt;t.life-=dt*1.1}
+    trailN=trailN.filter(t=>t.life>0);
     P.fire-=dt;
     missileT=Math.max(0,missileT-dt);laserT=Math.max(0,laserT-dt);vampCD=Math.max(0,vampCD-dt);
     if(P.fire<=0){
@@ -1875,6 +1978,12 @@ function poly(pts,fill,stroke){
   if(fill){ctx.fillStyle=fill;ctx.fill()}
   if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke()}
 }
+function drawTrail(){
+  if(!J||!J.trail||!trailN.length)return;
+  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='700 13px Orbitron,sans-serif';
+  for(const t of trailN){ctx.globalAlpha=Math.max(0,t.life)*.9;ctx.fillStyle=J.tcol||'#e5ccff';ctx.shadowColor=J.tglow||'#8e44ff';ctx.shadowBlur=8;ctx.fillText(J.trail===true?'6564':J.trail,t.x,t.y)}
+  ctx.restore();
+}
 function drawPlayer(){
   if(P.dead)return;
   if(P.inv>0&&!reduceFx&&Math.floor(time*20)%2===0)return;
@@ -1898,18 +2007,19 @@ function drawEnemy(e){
   if(e.t===0)ctx.rotate(Math.sin(e.age*5)*.15);
   if(e.t<4){const fl=6+Math.sin(e.age*40+e.x)*3,y0=e.t===2?-20:-12;poly([[-4,y0],[0,y0-fl],[4,y0]],'rgba(255,120,80,.85)')}
   const col=(c)=>hit?'#fff':c;
+  const pa=EPAL[e.pv|0]||null,pf=(c)=>pa?col(pa[0]):col(c),pk=(c)=>pa?pa[1]:c;
   if(e.t===0){
-    poly([[0,16],[14,-10],[0,-4],[-14,-10]],col('#ff4d6d'),'#ffb3c1');
+    poly([[0,16],[14,-10],[0,-4],[-14,-10]],pf('#ff4d6d'),pk('#ffb3c1'));
   }else if(e.t===1){
     ctx.rotate(Math.sin(e.age*2.6+e.ph)*.4);
-    poly([[0,14],[18,-4],[10,-14],[0,-6],[-10,-14],[-18,-4]],col('#b86bff'),'#e2c4ff');
+    poly([[0,14],[18,-4],[10,-14],[0,-6],[-10,-14],[-18,-4]],pf('#b86bff'),pk('#e2c4ff'));
     ctx.fillStyle='#fff';ctx.fillRect(-2,-2,4,4);
   }else if(e.t===2){
-    poly([[-22,-6],[-12,-20],[12,-20],[22,-6],[16,14],[-16,14]],col('#ff8c42'),'#ffd2a8');
+    poly([[-22,-6],[-12,-20],[12,-20],[22,-6],[16,14],[-16,14]],pf('#ff8c42'),pk('#ffd2a8'));
     ctx.fillStyle=col('#3a1a08');ctx.fillRect(-8,-6,16,12);
     ctx.fillStyle='#ffd166';ctx.fillRect(-3,0,6,14);
   }else if(e.t===3){
-    poly([[0,18],[18,0],[10,-16],[-10,-16],[-18,0]],col('#2ec4b6'),'#b5f5ee');
+    poly([[0,18],[18,0],[10,-16],[-10,-16],[-18,0]],pf('#2ec4b6'),pk('#b5f5ee'));
     ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,-2,5,0,6.283);ctx.fill();
     ctx.fillStyle='#e71d36';ctx.beginPath();ctx.arc(0,-2,2.5,0,6.283);ctx.fill();
   }else if(e.t===4&&e.bk===4){zepDraw(e,col)
@@ -2003,6 +2113,28 @@ function draw(){
     }
     ctx.globalCompositeOperation='lighter';ctx.lineCap='round';
     for(const b of pBul){
+      if(b.shot){
+        ctx.globalCompositeOperation='source-over';
+        if(b.shot==='ball'){
+          ctx.fillStyle='rgba(60,140,255,.30)';ctx.beginPath();ctx.arc(b.x,b.y,13,0,6.283);ctx.fill();
+          ctx.fillStyle='rgba(60,140,255,.45)';ctx.fillRect(b.x-2.5,b.y+6,5,26);
+          ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(b.x,b.y,7.5,0,6.283);ctx.fill();
+          ctx.strokeStyle='#2d6bff';ctx.lineWidth=2;ctx.stroke();
+        }else if(b.shot==='xiao'){
+          ctx.fillStyle='rgba(31,191,117,.30)';ctx.beginPath();ctx.arc(b.x,b.y,14,0,6.283);ctx.fill();
+          ctx.fillStyle='rgba(31,191,117,.45)';ctx.fillRect(b.x-2.5,b.y+6,5,26);
+          ctx.fillStyle='#eafff3';ctx.strokeStyle='#14804e';ctx.lineWidth=2;
+          ctx.beginPath();ctx.ellipse(b.x,b.y,9,7,0,Math.PI,0);ctx.lineTo(b.x+9,b.y+3);ctx.lineTo(b.x-9,b.y+3);ctx.closePath();ctx.fill();ctx.stroke();
+          ctx.fillStyle='#14804e';for(const dx of[-4,0,4]){ctx.fillRect(b.x+dx-.6,b.y-6,1.2,5)}
+        }else{
+          ctx.fillStyle='rgba(255,90,30,.30)';ctx.fillRect(b.x-7,b.y-18,14,36);
+          ctx.fillStyle='#ff5a1f';ctx.fillRect(b.x-3.5,b.y-14,7,28);
+          ctx.fillStyle='#ffd23f';ctx.fillRect(b.x-1.2,b.y-14,2.4,28);
+          ctx.strokeStyle='#7a2a08';ctx.lineWidth=1.2;ctx.strokeRect(b.x-3.5,b.y-14,7,28);
+        }
+        ctx.globalCompositeOperation='lighter';
+        continue;
+      }
       const tx=b.x-b.vx*.028,ty=b.y-b.vy*.028;
       ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(tx,ty);
       ctx.strokeStyle=b.laser?'rgba(76,201,240,.5)':b.crit?'rgba(255,80,100,.5)':'rgba(90,190,255,.35)';
@@ -2018,6 +2150,7 @@ function draw(){
       ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,6.283);ctx.fillStyle=b.c;ctx.fill();
       ctx.beginPath();ctx.arc(b.x,b.y,b.r*.45,0,6.283);ctx.fillStyle='#fff';ctx.fill();
     }
+    drawTrail();
     drawPlayer();
   }
   ctx.globalCompositeOperation='lighter';
@@ -2030,6 +2163,7 @@ function draw(){
   if(flash>0&&!reduceFx){ctx.fillStyle=`rgba(255,255,255,${flash*.6})`;ctx.fillRect(0,0,W,H)}
 
   if(fadeIn>0){ctx.fillStyle=`rgba(5,6,15,${fadeIn})`;ctx.fillRect(0,0,W,H)}
+  if(MENU_ST.has(state)||hqIs(state))menuDeco();
   if(state==='menu'||state==='trade')drawMenu();
   else if(state==='hangar')drawHangar();
   else if(state==='traits')drawTraits();
@@ -2085,6 +2219,7 @@ function drawHUD(){
   if(gameMode==='blitz')text('⏱ '+Math.ceil(modeT)+'s',W/2,22,modeT<=10?19+Math.sin(time*12)*2:19,modeT<=10?'#ff5577':'#4cc9f0','center','700');
   else if(isCampaign)text((storyActive?'CHAPTER ':'MISSION ')+(campLevel+1)+' · '+CAMP()[campLevel].name.toUpperCase(),W/2,22,13,'#8aa','center','700');
   else text((gameMode==='bossrush'?'BOSS ':gameMode==='horde'?'SWARM ':gameMode==='dogfight'?'SQUADRON ':gameMode==='airwar'?'RAID ':gameMode==='hardcore'?'💀 WAVE ':'WAVE ')+Math.max(1,wave),W/2,22,14,'#8aa','center','700');
+  if(J&&J.infinite){text('♥ ∞',W-18,22,22,'#ff5c8a','right','800')}else
   for(let i=0;i<P.hp;i++){const pl=P.hp<=1?Math.sin(time*10)*3:Math.sin(time*3+i)*.8;
     text('♥',W-18-i*20+R(-1,1)*hpShake*8,22+R(-1,1)*hpShake*8,20+pl,'#ff5c8a','center')}
   text(muted?'🔇':'🔊',W-14,46,13,'#fff','center','400');
@@ -2152,6 +2287,46 @@ function drawHUD(){
   }
 }
 
+/* ---------- menu decoration: nebula, planet, sparkles, shooting stars, frame ---------- */
+const MENU_ST=new Set(['menu','trade','hangar','traits','modes','campselect','story','quests','achieve','casino','prof']);
+const MD_TINT={menu:[91,140,255],trade:[91,140,255],hangar:[143,180,255],traits:[180,110,255],modes:[255,140,80],campselect:[80,200,255],story:[255,200,110],quests:[90,220,150],achieve:[255,210,90],casino:[255,80,140],prof:[143,180,255]};
+const mdStars=Array.from({length:26},(_,i)=>({x:(i*97%480),y:(i*211%720),p:i*1.7,s:1+(i%3)*.6}));
+let mdShoot=null,mdNext=2;
+function menuDeco(){
+  const t=time,tc=MD_TINT[state]||[110,150,255],c=(a)=>'rgba('+tc[0]+','+tc[1]+','+tc[2]+','+a+')';
+  ctx.save();
+  // drifting nebula glows
+  for(let i=0;i<3;i++){
+    const x=W*(.2+.3*i)+Math.sin(t*.25+i*2)*40,y=H*(.25+.22*i)+Math.cos(t*.2+i)*40,r=190+30*Math.sin(t*.4+i);
+    const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,c(.16));g.addColorStop(1,c(0));
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  }
+  // ringed planet
+  const px=W*.84+Math.sin(t*.15)*8,py=H*.12+Math.cos(t*.2)*6;
+  const pg=ctx.createRadialGradient(px-8,py-8,2,px,py,26);pg.addColorStop(0,c(.55));pg.addColorStop(1,c(.08));
+  ctx.fillStyle=pg;ctx.beginPath();ctx.arc(px,py,24,0,6.283);ctx.fill();
+  ctx.strokeStyle=c(.4);ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(px,py,40,10,-.4,0,6.283);ctx.stroke();
+  // sparkles
+  if(!reduceFx)for(const q of mdStars){
+    const a=.25+.55*Math.abs(Math.sin(t*1.6+q.p));ctx.fillStyle='rgba(255,255,255,'+a+')';
+    ctx.fillRect(q.x-q.s/2,q.y-4*q.s*a,q.s,8*q.s*a);ctx.fillRect(q.x-4*q.s*a,q.y-q.s/2,8*q.s*a,q.s);
+  }
+  // shooting star
+  if(!reduceFx){
+    mdNext-=1/60;if(!mdShoot&&mdNext<=0){mdShoot={x:Math.random()*W,y:Math.random()*H*.4,l:1};mdNext=2+Math.random()*3}
+    if(mdShoot){const m=mdShoot;m.x-=7;m.y+=4;m.l-=.02;
+      const gr=ctx.createLinearGradient(m.x,m.y,m.x+60,m.y-34);gr.addColorStop(0,'rgba(255,255,255,'+Math.max(0,m.l)+')');gr.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.strokeStyle=gr;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(m.x,m.y);ctx.lineTo(m.x+60,m.y-34);ctx.stroke();if(m.l<=0)mdShoot=null}
+  }
+  // frame: corner brackets and accent lines
+  ctx.strokeStyle=c(.55);ctx.lineWidth=2;ctx.shadowColor=c(.9);ctx.shadowBlur=8;
+  const m=6,L=22;
+  for(const [cx,cy,dx,dy] of [[m,m,1,1],[W-m,m,-1,1],[m,H-m,1,-1],[W-m,H-m,-1,-1]]){ctx.beginPath();ctx.moveTo(cx,cy+dy*L);ctx.lineTo(cx,cy);ctx.lineTo(cx+dx*L,cy);ctx.stroke()}
+  ctx.shadowBlur=0;
+  const lg=ctx.createLinearGradient(0,0,W,0);lg.addColorStop(0,c(0));lg.addColorStop(.5,c(.7));lg.addColorStop(1,c(0));
+  ctx.fillStyle=lg;ctx.fillRect(0,2,W,2);ctx.fillRect(0,H-4,W,2);
+  ctx.restore();
+}
 function drawMenu(){
   ctx.fillStyle='rgba(5,6,15,.35)';ctx.fillRect(0,0,W,H);
   const y=H*.22+Math.sin(time*2)*4;
@@ -3097,13 +3272,13 @@ function extDrawEnemy(e){
   ctx.save();ctx.translate(e.x,e.y);
   const hit=e.flash>0,col=c=>hit?'#fff':c;
   if(e.t===5){
-    poly([[0,20],[18,10],[18,-10],[0,-20],[-18,-10],[-18,10]],col('#1f8fd0'),'#bdf0ff');
+    const pa=EPAL[e.pv|0]||null;poly([[0,20],[18,10],[18,-10],[0,-20],[-18,-10],[-18,10]],pa?col(pa[0]):col('#1f8fd0'),pa?pa[1]:'#bdf0ff');
     ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,0,5,0,6.283);ctx.fill();
     if(e.sh>0){ctx.beginPath();ctx.arc(0,0,27,0,6.283);ctx.strokeStyle='rgba(127,227,255,'+(.25+.5*e.sh/(e.max*.7))+')';ctx.lineWidth=3;ctx.stroke()}
   }else if(e.t===6){
     if(e.dash)ctx.rotate(Math.atan2(e.vy,e.vx)-Math.PI/2);
     else ctx.rotate(Math.sin(e.age*9)*.2);
-    poly([[0,16],[11,-6],[5,-10],[0,-4],[-5,-10],[-11,-6]],col('#ff7a1a'),'#ffd1a0');
+    const pa=EPAL[e.pv|0]||null;poly([[0,16],[11,-6],[5,-10],[0,-4],[-5,-10],[-11,-6]],pa?col(pa[0]):col('#ff7a1a'),pa?pa[1]:'#ffd1a0');
     poly([[-3,-8],[0,-8-(e.dash?12:4)],[3,-8]],'rgba(255,200,80,.85)');
   }else if(e.t===8){
     ctx.rotate(Math.PI+Math.sin(e.age*2.2+e.x0)*.25);
@@ -3132,7 +3307,7 @@ function extDrawEnemy(e){
     ctx.strokeStyle=col('#8a6f3f');ctx.beginPath();ctx.moveTo(-8,14);ctx.lineTo(-3,24);ctx.moveTo(8,14);ctx.lineTo(3,24);ctx.stroke();
     ctx.fillStyle=col('#4a3a20');ctx.fillRect(-5,24,10,7);
   }else{
-    poly([[0,20],[6,-4],[4,-18],[0,-12],[-4,-18],[-6,-4]],col('#e0218a'),'#ffb3dc');
+    const pa=EPAL[e.pv|0]||null;poly([[0,20],[6,-4],[4,-18],[0,-12],[-4,-18],[-6,-4]],pa?col(pa[0]):col('#e0218a'),pa?pa[1]:'#ffb3dc');
     ctx.fillStyle='#fff';ctx.fillRect(-1.5,10,3,8);
   }
   ctx.restore();
@@ -3268,7 +3443,8 @@ const svEl=document.getElementById('sv'),svt=document.getElementById('svt'),svm=
 let svFrom=null;
 function svIsOpen(){return !svEl.hidden}
 function svMsg(m,bad){svm.textContent=m;svm.style.color=bad?'#ff8a9a':'#80ffdb';say(m)}
-function svShow(){if(!pkey)return;svFrom=document.activeElement;if(state==='play')state='pause';svt.value='';svm.textContent='';svEl.hidden=false;svt.focus()}
+function svStat(){let n=0;try{n=(localStorage.getItem('starfall_save_'+pkey)||'').length}catch(e){}svs.textContent='✅ Auto-saved'+(lastSave?' at '+new Date(lastSave).toLocaleTimeString():'')+' · '+(n/1024).toFixed(1)+' KB';}
+function svShow(){if(!pkey)return;svStat();svFrom=document.activeElement;if(state==='play')state='pause';svt.value='';svm.textContent='';svEl.hidden=false;svt.focus()}
 function svHide(){svEl.hidden=true;try{(svFrom&&svFrom.focus&&svFrom!==document.body?svFrom:cv).focus()}catch(e){}}
 const b64e=t=>btoa(unescape(encodeURIComponent(t))),b64d=t=>decodeURIComponent(escape(atob(t)));
 function svExport(){
@@ -3291,6 +3467,13 @@ function svImport(){
     svMsg('Imported! Pilot '+(o.n||'?')+"'s progress is now on "+user+'.');
   }catch(e){svMsg('Could not read that code.',1)}
 }
+const svs=document.getElementById('svs');
+document.getElementById('svDl').addEventListener('click',()=>{
+  if(!svt.value)svExport();if(!svt.value)return;
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([svt.value],{type:'text/plain'}));a.download='starfall-'+(user||'save')+'.starfall';document.body.appendChild(a);a.click();a.remove();svMsg('Backup file downloaded.');
+});
+document.getElementById('svUp').addEventListener('click',()=>document.getElementById('svf').click());
+document.getElementById('svf').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{svt.value=String(r.result).trim();svImport()};r.readAsText(f);e.target.value=''});
 document.getElementById('svExp').addEventListener('click',svExport);
 document.getElementById('svImp').addEventListener('click',svImport);
 document.getElementById('svClose').addEventListener('click',svHide);
@@ -3392,11 +3575,11 @@ bFill.addEventListener('click',e=>{window.sfForce=!window.sfForce;syncBar();save
     else if(!o&&open){open=false;dtw.hidden=true}
   },1000);
 })();
-const NEWS_VER='story-1';
+const NEWS_VER='goats-5';
 function showNews(){
   let seen='';try{seen=localStorage.getItem('starfall_news')||''}catch(e){}
   if(seen===NEWS_VER)return;
-  const n=document.getElementById('news');n.hidden=false;document.getElementById('nClose').focus();say("What's new: Story Mode. Press any key to close.");
+  const n=document.getElementById('news');n.hidden=false;document.getElementById('nClose').focus();say("What's new: Goats Pack. Press any key to close.");
 }
 function closeNews(){
   const n=document.getElementById('news');if(n.hidden)return;
