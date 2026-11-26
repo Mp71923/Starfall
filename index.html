@@ -365,7 +365,8 @@ const MODES=[
   {id:'horde',   name:'HORDE',   ic:'🐝', col:'#80ffdb',rule:'Swarm',       desc:'Endless swarms of weak ships. Coins rain from every kill.'},
   {id:'airwar',name:'AIR WAR',ic:'🛩️', col:'#9db4c0',rule:'WW2 raids',desc:'Fighters and heavy bombers. A battleship boss every 4th raid.'},
   {id:'story',name:'STORY MODE',ic:'📜', col:'#e8c9a0',rule:'Wings of War',desc:'Follow the Whitaker family through two world wars, 1916 to 1965.'},
-  {id:'dogfight',name:'DOGFIGHT',ic:'✈️', col:'#d4a373',rule:'WW1 squadrons',desc:'Biplane squadrons and balloons. An ace pilot every 3rd wave.'}
+  {id:'dogfight',name:'DOGFIGHT',ic:'✈️', col:'#d4a373',rule:'WW1 squadrons',desc:'Biplane squadrons and balloons. An ace pilot every 3rd wave.'},
+  {id:'protect',name:'PROTECT',ic:'🌍',col:'#4ade80',rule:'Save the planet',desc:'Aliens dive at Earth. Hold the line.'}
 ];
 const modeCard=i=>({x:16+(i%2)*232,y:84+Math.floor(i/2)*100,w:216,h:96});
 let casMode='slots',casBet=50,casSpinning=false,casT=0,casReels=[0,0,0],casTarget=[0,0,0],casResult='',casFlash=0,casRouAngle=0,casRouTarget=0,casWin=0,casRouFrom=0,casRouSeg=0,casRouLast=-1,casBetType='green',casBetNum=1,casSpinBet=null,casRS=[0,0,0],casRD=[0,0,0],casStop=[0,0,0];
@@ -834,7 +835,7 @@ function drawJetBody(i){
   }
 }
 function dropCoins(e){
-  let n=e.t===4?14:e.t===2?3:e.t>=1?2:1;const v=(e.t===4?5:e.t===2?2:1)*(gameMode==='hardcore'?2:1);if(tOwn.gold&&Math.random()<.5)n++;if(Math.random()<hqFx.coin)n++;if(Math.random()<spdBonus()-1)n++;if(gameMode==='horde'&&Math.random()<.35)n++;
+  let n=e.t===4?14:e.t===2?3:e.t>=1?2:1;if(gameMode==='protect'&&ptp.dbl>0)n*=2;const v=(e.t===4?5:e.t===2?2:1)*(gameMode==='hardcore'?2:1)*(gameMode==='protect'?ptp.cash:1);if(tOwn.gold&&Math.random()<.5)n++;if(Math.random()<hqFx.coin)n++;if(Math.random()<spdBonus()-1)n++;if(gameMode==='horde'&&Math.random()<.35)n++;
   for(let i=0;i<n;i++)coins.push({x:e.x+R(-8,8),y:e.y+R(-8,8),vx:R(-110,110),vy:R(-140,-20),v,age:R(0,3),r:8});
 }
 function drawCoin(c){
@@ -1355,6 +1356,8 @@ addEventListener('keydown',e=>{
   keys[e.key.toLowerCase()]=true;
   const k=e.key.toLowerCase();
   if(state==='story'){if(k==='enter'||k===' ')advanceStory();return}
+  if(state==='ptpdiff'){ptpDiffKey(k);return}
+  if(gameMode==='protect'&&state==='play'&&ptp.phase==='shop'&&ptpKey(k))return;
   if(state==='campselect'){
     if(k==='escape'||k==='b'){state='menu';return}
     if(k==='enter'||k===' '){startCampaignLevel(campSel);return}
@@ -1487,7 +1490,9 @@ cv.addEventListener('pointerdown',e=>{
     if(inR(p,hb.casBetP)){casAdjBet(1);return}
     if(inR(p,hb.casGo)){casPlay();return}
   }
+  else if(state==='ptpdiff'){ptpDiffClick(p)}
   else if(state==='play'){
+    if(gameMode==='protect'&&ptpClick(p))return;
     if(shopOpen){
       const ups=['dmg','rate','mag'];
       ups.forEach((k,i)=>{
@@ -1540,6 +1545,7 @@ function startGame(camp){
   summonCD=0;runUpg={dmg:0,rate:0,mag:0};shopOpen=false;
   if(J.summon){for(let i=0;i<J.summon;i++)spawnSummon(true)}
   hqApplyStart(SL);
+  if(gameMode==='protect')ptpReset();
   state='play';
 }
 function buyRunUpg(k){
@@ -1595,6 +1601,7 @@ function advanceStory(){if(storyNext){const fn=storyNext;storyNext=null;fn()}}
 
 function nextWave(){
   if(isCampaign)return;
+  if(gameMode==='protect')return;
   if(gameMode==='hq'){hqNextWave();return}
   if(gameMode==='bossrush'){wave++;queue=[{t:1,type:4,x:W/2}];waveClock=0;banner='⚠ BOSS '+wave+' ⚠';bannerT=2.2;return}
   if(gameMode==='airwar'){
@@ -1753,6 +1760,7 @@ function update(dt){
   if(state==='casino'){updateCasino(dt);return}
   if(state!=='play')return;
 
+  ptpUpdate(dt);
   /* player */
   if(!P.dead){
     let mx=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0);
@@ -2089,6 +2097,7 @@ function draw(){
         ctx.globalAlpha=1;
       }
     }
+    ptpDrawWorld();
     enemies.forEach(drawEnemy);
     extDrawOver();hqDrawWings();
     // draw summons
@@ -2173,11 +2182,13 @@ function draw(){
   else if(state==='quests')drawQuests();
   else if(state==='achieve')drawAchieve();
   else if(state==='casino')drawCasino();
+  else if(state==='ptpdiff')ptpDiffDraw();
   else if(hqIs(state))drawHQ();
   else if(state==='tour')drawTour();
   else if(state==='login'){}
   else{
     drawHUD();
+    ptpOverlay();
     if(state==='pause'){
       ctx.fillStyle='rgba(5,6,15,.7)';ctx.fillRect(0,0,W,H);
       text('PAUSED',W/2,H/2-80,44,'#fff');
@@ -2402,6 +2413,7 @@ function startMode(id){
   if(id==='hq')id='endless';
   if(id==='story'){storyActive=true;gameMode='story';best=modeBest.story||0;state='campselect';campSel=Math.min(PROG(),CAMP().length-1);return}
   if(id==='campaign'){storyActive=false;gameMode='campaign';best=modeBest.campaign||0;state='campselect';campSel=Math.min(PROG(),CAMP().length-1);return}
+  if(id==='protect'){state='ptpdiff';ptp.dsel=0;return}
   gameMode=id;best=modeBest[id]||0;startGame(false);
 }
 function drawModes(){
@@ -3617,6 +3629,340 @@ function a11yTick(){
   if(state==='casino'&&casResult!==aC){aC=casResult;if(casResult)say(casResult.replace(/×/g,'times ')+(casWin?'. You won '+casWin+' coins.':''))}
 }
 syncBar();placeBar();
+
+/* ---------- PROTECT THE PLANET ---------- */
+const PTP_DIFF=[
+  {n:'CADET',d:'Fewer waves, more starting coins',waves:8,hp:7,coins:400,hpm:.8,cash:1.25,ev:.6,col:'#4cc9f0'},
+  {n:'PILOT',d:'The balanced defense',waves:10,hp:5,coins:200,hpm:1,cash:1,ev:1,col:'#4ade80'},
+  {n:'VETERAN',d:'Tougher aliens, less cash',waves:12,hp:4,coins:100,hpm:1.35,cash:.8,ev:1.25,col:'#ffb020'},
+  {n:'LEGEND',d:'Longest run, surprises come often',waves:14,hp:4,coins:50,hpm:1.6,cash:.7,ev:2,col:'#ff3d7f'}
+];
+const PTP_UP=[
+  {k:'laser',n:'LASER TURRET',d:'Faster, brighter shots',base:60,ic:'⚡'},
+  {k:'missile',n:'MISSILE BATTERY',d:'Turret rockets home in on aliens',base:90,ic:'🚀'},
+  {k:'shield',n:'SHIELD DOME',d:'Each charge blocks one hit on Earth',base:120,ic:'🛡'},
+  {k:'flak',n:'FLAK CANNON',d:'Shells burst into splash damage',base:80,ic:'💥'}
+];
+const PTP_EVN={meteor:'METEOR STORM',blackout:'SHIELD BLACKOUT',double:'DOUBLE COINS',ally:'FRIENDLY WINGMAN JOINS',jam:'JAMMER: TURRETS SLOWED'};
+const PTP_CH={hold:'Hold the line for 20 seconds',elite:'Stop the marked ELITE before it reaches Earth',cargo:'Keep the cargo ship alive as it crosses'};
+const PTP_T=[64,150,330,416];
+let ptp={diff:1,dsel:0,phase:'shop',wave:0,base:5,maxBase:5,cash:1,won:0,turrets:[],tb:[],lv:{laser:0,missile:0,shield:0,flak:0},shieldN:0,ch:null,chLabel:'',mark:null,cargo:null,dbl:0,jam:0,blackout:0,ally:0,allyCd:0,evCool:6,evName:'',msg:'',msgC:'#fff',msgT:0,rT:0};
+const ptpD=()=>PTP_DIFF[ptp.diff];
+const ptpCard=i=>({x:24,y:118+i*98,w:W-48,h:86});
+const ptpGo={x:W/2-130,y:H-112,w:260,h:54};
+const ptpDR=i=>({x:24,y:110+i*140,w:W-48,h:120});
+const ptpCost=i=>Math.round(PTP_UP[i].base*(ptp.lv[PTP_UP[i].k]+1)*(1+ptp.diff*.15));
+function ptpNote(m,c){ptp.msg=m;ptp.msgC=c||'#fff';ptp.msgT=2.6;say(m)}
+function ptpReset(){
+  const D=ptpD();
+  Object.assign(ptp,{phase:'shop',wave:0,base:D.hp,maxBase:D.hp,cash:D.cash,won:0,tb:[],lv:{laser:0,missile:0,shield:0,flak:0},shieldN:0,ch:null,chLabel:'',mark:null,cargo:null,dbl:0,jam:0,blackout:0,ally:0,allyCd:0,evCool:6,evName:'',msgT:0,rT:0});
+  ptp.turrets=PTP_T.map(x=>({x,y:H-46,cd:0,ang:-Math.PI/2}));
+  queue=[];runCoins=D.coins;
+  banner='PROTECT THE PLANET';bannerT=2;
+}
+function ptpBuy(i){
+  const u=PTP_UP[i],lv=ptp.lv[u.k];
+  if(lv>=3){ptpNote('Already at max level','#8aa');return}
+  const c=ptpCost(i);
+  if(runCoins<c){denyT=.4;sfx('deny',160,.2,'sawtooth',.06,-60);ptpNote('Not enough coins','#ff7a8f');return}
+  runCoins-=c;ptp.lv[u.k]=lv+1;
+  sfx('buy',600+lv*80,.3,'triangle',.06,400);burst(W/2,H*.5,'#4ade80',34,240,.6);
+  ptpNote(u.n+' upgraded to level '+(lv+1),'#4ade80');
+}
+function ptpLaunch(){
+  if(ptp.phase!=='shop')return;
+  const D=ptpD(),w=ptp.wave+1;
+  ptp.wave=w;ptp.phase='fight';wave=w;waveClock=0;
+  ptp.shieldN=ptp.lv.shield*2;ptp.evCool=7/D.ev;
+  const n=Math.min(46,Math.round((5+w*2.2)*(1+(D.hpm-1)*.3)));
+  const pool=[0,0];if(w>=2)pool.push(1,1);if(w>=3)pool.push(2);if(w>=4)pool.push(3);if(w>=6)pool.push(2,3,6);if(w>=8)pool.push(5);
+  queue=[];
+  for(let i=0;i<n;i++)queue.push({t:i*Math.max(.3,1-w*.04),type:pool[(Math.random()*pool.length)|0],x:R(40,W-40)});
+  if(w%10===0)queue.push({t:2,type:4,x:W/2});
+  ptp.ch=null;ptp.chLabel='';ptp.mark=null;
+  let note='WAVE '+w;
+  if(w>=2&&Math.random()<.55){
+    const k=['hold','elite','cargo'][(Math.random()*3)|0];
+    ptp.ch={k,t:0,done:0};ptp.chLabel='CHALLENGE · '+PTP_CH[k];
+    if(k==='elite')queue.push({t:1,type:2,x:R(60,W-60)});
+    if(k==='cargo')ptp.cargo={x:-40,vx:58,hp:6,maxhp:6};
+    note='Challenge: '+PTP_CH[k];
+  }
+  banner=w%10===0?'⚠ BOSS WAVE '+w+' ⚠':'WAVE '+w;bannerT=2.2;
+  if(w>stats.maxwave)stats.maxwave=w;
+  sfx('pu',520,.25,'triangle',.05,300);
+  ptpNote(note,'#ffd166');
+}
+function ptpReward(c,msg){runCoins+=c;bank+=c;float(W/2,H*.36,msg+'  +🪙'+c,'#4ade80');burst(W/2,H*.36,'#4ade80',40,260,.7);sfx('buy',700,.3,'triangle',.06,400);checkAch()}
+function ptpChEnd(ok){
+  if(!ptp.ch||ptp.ch.done)return;
+  ptp.ch.done=1;ptp.chLabel='';
+  if(ok)ptpReward(120+ptp.diff*40,'CHALLENGE COMPLETE!');
+  else{float(W/2,H*.4,'CHALLENGE FAILED','#ff5577');sfx('deny',200,.2,'sawtooth',.06,-60);ptpNote('Challenge failed','#ff7a8f')}
+}
+function ptpHitBase(x){
+  if(ptp.shieldN>0&&ptp.blackout<=0){
+    ptp.shieldN--;ring(W/2,H-40,'#7fe3ff',190,.5,6);burst(x,H-60,'#7fe3ff',18,200,.5);sfx('hit',640,.2,'sine',.05,200);
+    ptpNote('Shield dome blocked a hit','#7fe3ff');return;
+  }
+  ptp.base--;shake=16;flash=.3;hpShake=.5;
+  ring(x,H-50,'#ff5577',150,.5,6);burst(x,H-50,'#ff5577',30,260,.6);sfx('hit',200,.3,'sawtooth',.1,-120);
+  if(ptp.ch&&ptp.ch.k==='hold'&&!ptp.ch.done)ptpChEnd(false);
+  if(ptp.base<=0)ptpLose();
+  else if(ptp.base<=2)ptpNote('EARTH IS UNDER ATTACK','#ff5577');
+}
+function ptpLose(){
+  if(P.dead&&ptp.base<=0)return;
+  ptp.base=0;P.dead=true;deadT=0;slowT=.8;shake=26;flash=.5;
+  ring(W/2,H-40,'#ff5577',320,1,8);burst(W/2,H-40,'#ff9a3c',80,400,1.2);sfx('die',120,1,'sawtooth',.15,-90);
+}
+function ptpWin(){
+  if(ptp.won)return;ptp.won=1;
+  const r=500+ptp.diff*300;runCoins+=r;bank+=r;
+  hqWon=true;P.dead=false;state='over';overT=0;
+  addXP(80+ptp.diff*40);saveBest();checkAch();saveAll();
+  sfx('buy',660,.5,'triangle',.07,500);burst(W/2,H/2,'#4ade80',90,380,1);ring(W/2,H*.6,'#4ade80',420,.9,8);
+}
+function ptpEvent(){
+  const k=PTP_EV_LIST[(Math.random()*PTP_EV_LIST.length)|0];
+  if(k==='meteor'){for(let i=0;i<12;i++){spawn(0,R(30,W-30));const e=enemies[enemies.length-1];e.y=-40-i*70;e.vy=R(210,270);e.met=1}}
+  else if(k==='blackout')ptp.blackout=6;
+  else if(k==='double')ptp.dbl=10;
+  else if(k==='ally')ptp.ally=12;
+  else if(k==='jam')ptp.jam=8;
+  banner='⚡ '+PTP_EVN[k]+' ⚡';bannerT=2.2;
+  sfx('pu',300,.4,'sawtooth',.05,-100);
+  ptpNote(PTP_EVN[k],'#ff9f6b');
+}
+const PTP_EV_LIST=['meteor','blackout','double','ally','jam'];
+function ptpNear(x,y,r){let b=null,bd=r;for(const e of enemies){if(e.dead||e.y<=0)continue;const d=Math.hypot(e.x-x,e.y-y);if(d<bd){bd=d;b=e}}return b}
+function ptpShot(x,y,a,sp,homing,tg,splash,col,dmg){
+  ptp.tb.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,homing,tgt:tg,splash,c:col,dmg:dmg||1,life:2.6});
+  sfx('shoot',600,.05,'square',.02,-200,60);
+}
+function ptpUpdate(dt){
+  if(gameMode!=='protect'||state!=='play')return;
+  const D=ptpD();
+  ptp.msgT=Math.max(0,ptp.msgT-dt);
+  ptp.blackout=Math.max(0,ptp.blackout-dt);ptp.dbl=Math.max(0,ptp.dbl-dt);ptp.jam=Math.max(0,ptp.jam-dt);ptp.ally=Math.max(0,ptp.ally-dt);
+  for(const e of enemies){if(!e.ptpd){e.ptpd=1;e.hp*=D.hpm;e.max=e.hp}}
+  /* jet respawn: the jet is a fighter, not the base, so it comes back after a moment */
+  if(P.dead&&ptp.base>0){
+    ptp.rT+=dt;deadT=0;
+    if(ptp.rT>1){ptp.rT=0;P.dead=false;P.hp=2;P.inv=3;P.intro=0;P.y=H-110;float(P.x,P.y-30,'JET BACK IN THE FIGHT','#80ffdb');sfx('pu',500,.5,'triangle',.08,700)}
+  }
+  if(ptp.phase==='shop')return;
+  if(ptp.phase==='fight'&&!P.dead){
+    ptp.evCool-=dt;
+    if(ptp.evCool<=0){ptp.evCool=7/D.ev;if(enemies.length>2&&Math.random()<.5)ptpEvent()}
+    if(ptp.ch&&!ptp.ch.done){
+      if(ptp.ch.k==='hold'){ptp.ch.t+=dt;if(ptp.ch.t>=20)ptpChEnd(true)}
+      if(ptp.ch.k==='elite'){
+        if(!ptp.mark){const m=enemies.find(e=>e.t===2&&!e.dead);if(m)ptp.mark=m}
+        if(ptp.mark&&ptp.mark.dead&&!ptp.mark.reached)ptpChEnd(true);
+      }
+    }
+    if(ptp.cargo){
+      const c=ptp.cargo;c.x+=c.vx*dt;
+      if(c.hp<=0){ptpChEnd(false);ptp.cargo=null}
+      else if(c.x>W+40){ptpChEnd(true);ptp.cargo=null}
+    }
+  }
+  if(!P.dead&&ptp.blackout<=0){
+    const L=ptp.lv,jam=ptp.jam>0?2:1;
+    for(const t of ptp.turrets){
+      t.cd-=dt;if(t.cd>0)continue;
+      const tg=ptpNear(t.x,H-60,L.laser?470:390);if(!tg)continue;
+      t.cd=(L.laser?.85-L.laser*.2:.85)*jam;
+      t.ang=Math.atan2(tg.y-t.y,tg.x-t.x);
+      ptpShot(t.x,t.y-10,t.ang,L.laser?940:640,L.missile>0,tg,L.flak?36+L.flak*12:0,L.missile>0?'#ff9f1c':L.laser?'#7fe3ff':'#4ade80');
+    }
+  }
+  if(ptp.ally>0&&!P.dead){
+    ptp.allyCd-=dt;
+    if(ptp.allyCd<=0){const ax=P.x-44,tg=ptpNear(ax,P.y,420);if(tg){ptp.allyCd=.4;ptpShot(ax,P.y-8,Math.atan2(tg.y-P.y,tg.x-ax),720,false,tg,0,'#ffd166',.8)}}
+  }
+  /* turret shots */
+  for(const b of ptp.tb){
+    b.life-=dt;
+    if(b.homing&&b.tgt&&!b.tgt.dead&&b.tgt.y>0){
+      const sp=Math.hypot(b.vx,b.vy),cur=Math.atan2(b.vy,b.vx),want=Math.atan2(b.tgt.y-b.y,b.tgt.x-b.x);
+      const d=Math.atan2(Math.sin(want-cur),Math.cos(want-cur)),na=cur+clamp(d,-5*dt,5*dt);
+      b.vx=Math.cos(na)*sp;b.vy=Math.sin(na)*sp;
+    }
+    b.x+=b.vx*dt;b.y+=b.vy*dt;
+    if(b.y<-20)b.life=0;
+    if(b.life<=0)continue;
+    for(const e of enemies){
+      if(e.dead)continue;
+      if(Math.hypot(e.x-b.x,e.y-b.y)<e.r+5){
+        if(b.splash){
+          for(const f of enemies){if(!f.dead&&Math.hypot(f.x-b.x,f.y-b.y)<b.splash){f.hp-=b.dmg*.6;f.flash=.1}}
+          ring(b.x,b.y,'#ff9f1c',b.splash*2.2,.35,4);burst(b.x,b.y,'#ff9f1c',14,180,.4);
+        }
+        e.hp-=b.dmg;e.flash=.1;b.life=0;burst(b.x,b.y,b.c,4,120,.25);break;
+      }
+    }
+  }
+  ptp.tb=ptp.tb.filter(b=>b.life>0);
+  /* aliens reaching Earth */
+  for(const e of enemies){
+    if(e.dead||e.y<H-54)continue;
+    e.dead=true;
+    if(e===ptp.mark){e.reached=1;ptpChEnd(false)}
+    ptpHitBase(e.x);
+  }
+  /* alien bullets that hit the cargo ship */
+  if(ptp.cargo)for(const b of eBul){
+    if(Math.hypot(b.x-ptp.cargo.x,b.y-H*.42)<24){ptp.cargo.hp--;burst(b.x,b.y,'#ffd166',8,160,.3);b.y=-999}
+  }
+  /* wave cleared */
+  const alive=enemies.some(e=>!e.dead);
+  if(!alive&&!queue.length&&!ptp.cargo&&!P.dead&&ptp.base>0){
+    if(ptp.ch&&!ptp.ch.done)ptpChEnd(false);
+    ptp.ch=null;ptp.chLabel='';ptp.mark=null;
+    if(ptp.wave>=D.waves){ptpWin();return}
+    ptp.phase='shop';ptp.dbl=0;ptp.jam=0;ptp.blackout=0;ptp.ally=0;
+    ptpReward(40+ptp.wave*10,'WAVE CLEARED');
+    banner='WAVE CLEARED';bannerT=1.6;
+    ptpNote('Earth is safe. Upgrade your defense.','#4ade80');
+  }
+}
+/* ----- screens ----- */
+function ptpDiffPick(i){ptp.diff=i;gameMode='protect';best=modeBest.protect||0;startGame(false)}
+function ptpDiffClick(p){
+  if(inR(p,hb.back)){state='modes';return}
+  for(let i=0;i<PTP_DIFF.length;i++)if(inR(p,ptpDR(i))){ptpDiffPick(i);return}
+}
+function ptpDiffKey(k){
+  if(k==='escape'||k==='b'){state='modes';return}
+  if(k==='1'||k==='2'||k==='3'||k==='4'){ptpDiffPick(+k-1);return}
+  if(k==='arrowup'||k==='w')ptp.dsel=(ptp.dsel+3)%4;
+  else if(k==='arrowdown'||k==='s')ptp.dsel=(ptp.dsel+1)%4;
+  else if(k==='enter'||k===' ')ptpDiffPick(ptp.dsel);
+}
+function ptpDiffDraw(){
+  ctx.fillStyle='rgba(4,8,24,.92)';ctx.fillRect(0,0,W,H);
+  const g=ctx.createRadialGradient(W/2,H,20,W/2,H,420);g.addColorStop(0,'rgba(74,222,128,.22)');g.addColorStop(1,'rgba(74,222,128,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  btn(hb.back,'← BACK','#8fb4ff',null,15);
+  text('PROTECT THE PLANET',W/2,40,22,'#4ade80');
+  text('Choose your difficulty',W/2,70,14,'#9bb','center','600');
+  PTP_DIFF.forEach((d,i)=>{
+    const r=ptpDR(i),on=ptp.dsel===i;
+    rr(r.x,r.y,r.w,r.h,16);ctx.fillStyle=d.col+(on?'38':'14');ctx.fill();
+    ctx.lineWidth=on?3:1.5;ctx.strokeStyle=d.col;ctx.stroke();
+    text((i+1)+'  '+d.n,r.x+22,r.y+30,20,d.col,'left','800');
+    text(d.d,r.x+22,r.y+56,13,'#cfd8e6','left','600');
+    text(d.waves+' waves  ·  '+d.hp+' Earth hearts  ·  🪙 '+d.coins+' to start',r.x+22,r.y+84,11,'#9bb','left','600');
+  });
+  text('Tap a difficulty, or press 1–4',W/2,H-30,12,'#8aa','center','500');
+}
+function ptpShopDraw(){
+  ctx.fillStyle='rgba(4,10,28,.84)';ctx.fillRect(0,0,W,H);
+  const g=ctx.createRadialGradient(W/2,H,20,W/2,H,400);g.addColorStop(0,'rgba(74,222,128,.2)');g.addColorStop(1,'rgba(74,222,128,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  text(ptp.wave===0?'DEFENSE SHOP':'WAVE '+ptp.wave+' CLEARED',W/2,56,26,'#4ade80');
+  text('🪙 '+runCoins+'     Earth '+ptp.base+' / '+ptp.maxBase+' hearts',W/2,88,14,'#ffd166','center','700');
+  PTP_UP.forEach((u,i)=>{
+    const r=ptpCard(i),lv=ptp.lv[u.k],cost=ptpCost(i),max=lv>=3,can=!max&&runCoins>=cost;
+    rr(r.x,r.y,r.w,r.h,14);ctx.fillStyle=can?'rgba(74,222,128,.16)':'rgba(255,255,255,.05)';ctx.fill();
+    ctx.lineWidth=2;ctx.strokeStyle=can?'#4ade80':'rgba(255,255,255,.2)';ctx.stroke();
+    text(u.ic+'  '+u.n,r.x+18,r.y+27,16,'#fff','left','800');
+    text(u.d,r.x+18,r.y+50,12,'#9bb','left','600');
+    for(let s=0;s<3;s++){rr(r.x+18+s*24,r.y+62,18,8,3);ctx.fillStyle=s<lv?'#4ade80':'rgba(255,255,255,.15)';ctx.fill()}
+    text(max?'MAX':'🪙 '+cost,r.x+r.w-18,r.y+40,17,max?'#4ade80':can?'#ffd166':'#667','right','800');
+    text('press '+(i+1),r.x+r.w-18,r.y+68,10,'#8aa','right','600');
+  });
+  const r=ptpGo;
+  rr(r.x,r.y,r.w,r.h,16);ctx.fillStyle='rgba(74,222,128,.25)';ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#4ade80';ctx.stroke();
+  text(ptp.wave===0?'▶ START DEFENSE':'▶ LAUNCH WAVE '+(ptp.wave+1),r.x+r.w/2,r.y+r.h/2+1,18,'#fff');
+  if(ptp.msgT>0){ctx.globalAlpha=Math.min(1,ptp.msgT*2);text(ptp.msg,W/2,H-170,14,ptp.msgC,'center','700');ctx.globalAlpha=1}
+  text('Press 1–4 to upgrade  ·  Enter to launch',W/2,H-40,12,'#8aa','center','500');
+}
+function ptpClick(p){
+  if(ptp.phase!=='shop')return false;
+  for(let i=0;i<PTP_UP.length;i++)if(inR(p,ptpCard(i))){ptpBuy(i);return true}
+  if(inR(p,ptpGo))ptpLaunch();
+  return true;
+}
+function ptpKey(k){
+  if(k==='1'||k==='2'||k==='3'||k==='4'){ptpBuy(+k-1);return true}
+  if(k==='enter'||k===' '){ptpLaunch();return true}
+  return false;
+}
+function ptpDrawWorld(){
+  if(gameMode!=='protect')return;
+  const hy=H-38,bx=W/2;
+  ctx.save();
+  const g=ctx.createLinearGradient(0,hy-30,0,H);g.addColorStop(0,'#3b9cf0');g.addColorStop(.35,'#1a5aa8');g.addColorStop(1,'#071a3d');
+  ctx.beginPath();ctx.moveTo(-10,H+10);
+  for(let x=-10;x<=W+10;x+=10)ctx.lineTo(x,hy+Math.sin(x/58+time*.5)*3);
+  ctx.lineTo(W+10,H+10);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+  ctx.fillStyle='rgba(74,222,128,.3)';
+  [[70,hy+16,46,10],[250,hy+22,70,8],[420,hy+14,40,9]].forEach(([x,y,rx,ry])=>{ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,6.283);ctx.fill()});
+  ctx.strokeStyle='rgba(140,220,255,.8)';ctx.lineWidth=2;ctx.beginPath();
+  for(let x=-10;x<=W+10;x+=10)ctx.lineTo(x,hy+Math.sin(x/58+time*.5)*3);
+  ctx.stroke();
+  /* Earth base */
+  ctx.fillStyle='#2b3550';ctx.fillRect(bx-34,hy-4,68,8);
+  ctx.beginPath();ctx.arc(bx,hy-4,28,Math.PI,0);ctx.fillStyle='#3d4d7a';ctx.fill();ctx.strokeStyle='#9fd8ff';ctx.lineWidth=2;ctx.stroke();
+  for(let i=0;i<ptp.maxBase;i++){ctx.beginPath();ctx.arc(bx-(ptp.maxBase-1)*5+i*10,hy-14,3,0,6.283);ctx.fillStyle=i<ptp.base?'#ff5c8a':'#333';ctx.fill()}
+  /* shield dome */
+  if(ptp.shieldN>0&&ptp.blackout<=0){
+    ctx.beginPath();ctx.arc(bx,hy+6,150,Math.PI,0);ctx.fillStyle='rgba(120,230,255,'+(.07+.03*Math.sin(time*4))+')';ctx.fill();
+    ctx.strokeStyle='rgba(120,230,255,'+(.5+.25*Math.sin(time*6))+')';ctx.lineWidth=3;ctx.stroke();
+    text('SHIELD ×'+ptp.shieldN,bx,hy-44,11,'#7fe3ff','center','700');
+  }
+  /* turrets */
+  for(const t of ptp.turrets){
+    ctx.fillStyle='#2b3550';ctx.fillRect(t.x-12,hy-6,24,10);
+    ctx.save();ctx.translate(t.x,hy-8);ctx.rotate(t.ang+Math.PI/2);
+    ctx.fillStyle=ptp.lv.laser?'#7fe3ff':'#4ade80';ctx.fillRect(-3,-22,6,18);
+    ctx.restore();
+    ctx.beginPath();ctx.arc(t.x,hy-8,6,0,6.283);ctx.fillStyle='#9fd8ff';ctx.fill();
+  }
+  if(ptp.blackout>0){ctx.fillStyle='rgba(0,0,0,'+(.12+.06*Math.sin(time*14))+')';ctx.fillRect(0,0,W,H)}
+  /* turret shots */
+  for(const b of ptp.tb){
+    ctx.beginPath();ctx.arc(b.x,b.y,b.splash?5:3.5,0,6.283);ctx.fillStyle=b.c;ctx.shadowColor=b.c;ctx.shadowBlur=10;ctx.fill();ctx.shadowBlur=0;
+  }
+  /* cargo ship */
+  if(ptp.cargo){
+    const c=ptp.cargo,cy=H*.42;
+    ctx.save();ctx.translate(c.x,cy);
+    rr(-26,-12,52,24,6);ctx.fillStyle='#e8d26a';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff3b0';ctx.stroke();
+    ctx.restore();
+    text('📦',c.x,cy,14,'#fff','center','400');
+    ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(c.x-26,cy-22,52,4);ctx.fillStyle='#4ade80';ctx.fillRect(c.x-26,cy-22,52*c.hp/c.maxhp,4);
+  }
+  /* elite marker */
+  if(ptp.mark&&!ptp.mark.dead){
+    const m=ptp.mark;ctx.beginPath();ctx.arc(m.x,m.y,m.r+10+Math.sin(time*8)*2,0,6.283);ctx.strokeStyle='#ff2d55';ctx.lineWidth=2.5;ctx.stroke();
+    text('ELITE',m.x,m.y-m.r-22,10,'#ff2d55','center','800');
+  }
+  /* friendly wingman */
+  if(ptp.ally>0&&!P.dead)miniJet('spread','#ffd166',P.x-44,P.y-4,time,1.1);
+  ctx.restore();
+}
+function ptpOverlay(){
+  if(gameMode!=='protect'||state!=='play')return;
+  if(ptp.phase==='shop'&&!P.dead){ptpShopDraw();return}
+  let s='';for(let i=0;i<ptp.maxBase;i++)s+=i<ptp.base?'●':'○';
+  text('🌍 EARTH  '+s,W/2,86,13,ptp.base<=2?'#ff5577':'#4ade80','center','700');
+  if(ptp.chLabel&&ptp.ch&&!ptp.ch.done){
+    let extra='';
+    if(ptp.ch.k==='hold')extra='  ·  '+Math.max(0,Math.ceil(20-ptp.ch.t))+'s';
+    if(ptp.ch.k==='cargo'&&ptp.cargo)extra='  ·  cargo ♥'+Math.max(0,ptp.cargo.hp);
+    text(ptp.chLabel+extra,W/2,106,11,'#ffd166','center','700');
+  }
+  const tags=[];
+  if(ptp.blackout>0)tags.push('SHIELDS OFFLINE '+Math.ceil(ptp.blackout)+'s');
+  if(ptp.dbl>0)tags.push('2× COINS '+Math.ceil(ptp.dbl)+'s');
+  if(ptp.jam>0)tags.push('JAMMED '+Math.ceil(ptp.jam)+'s');
+  if(ptp.ally>0)tags.push('WINGMAN '+Math.ceil(ptp.ally)+'s');
+  tags.forEach((t,i)=>text(t,W/2,124+i*14,11,i%2?'#80ffdb':'#ff9f6b','center','700'));
+  if(ptp.msgT>0){ctx.globalAlpha=Math.min(1,ptp.msgT*2);text(ptp.msg,W/2,H*.2,13,ptp.msgC,'center','700');ctx.globalAlpha=1}
+}
+/* ---------- end PROTECT THE PLANET ---------- */
 
 startGame(false);state='login';
 requestAnimationFrame(frame);
