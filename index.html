@@ -330,12 +330,13 @@ JETS.push(
   // Trial jets (earned only by completing Trials, never from packs or the shop)
   {name:'Trial Hawk',rarity:9,trial:true,desc:'Trial reward. Quick and light.',spd:430,hp:4,rate:.8,dmg:1.6,bombs:3,mag:190,wl:2,col:'#ff7b00',acc:'#ffe0b3'},
   {name:'Trial Lynx',rarity:9,trial:true,desc:'Trial reward. Fast with a piercing shot.',spd:470,hp:4,rate:.7,dmg:1.9,bombs:3,mag:200,wl:2,col:'#00b4d8',acc:'#caf0f8',pierce:true},
-  {name:'Trial Crown',rarity:9,trial:true,desc:'Trial reward. The top prize from the hardest Trial.',spd:480,hp:7,rate:.6,dmg:2.5,bombs:5,mag:280,wl:3,col:'#f4c430',acc:'#fff8dc',phoenix:true,startShield:4}
+  {name:'Trial Crown',rarity:9,trial:true,desc:'Trial reward. The top prize from the hardest Trial.',spd:480,hp:7,rate:.6,dmg:2.5,bombs:5,mag:280,wl:3,col:'#f4c430',acc:'#fff8dc',phoenix:true,startShield:4},
+  {name:'Trial Omega',rarity:9,trial:true,desc:'Trial reward. Nightmare tier. Free revive, pierce, 2 drones.',spd:500,hp:8,rate:.52,dmg:3,bombs:6,mag:320,wl:3,col:'#e63946',acc:'#ffd6a5',phoenix:true,pierce:true,summon:2,startShield:5,startRapid:3}
 );
 const TRIAL_JETS=JETS.map((j,i)=>j.trial?i:-1).filter(i=>i>=0);
 // Call this when a player clears a Trial. Returns the jet index granted, or -1 if they already own it.
 function grantTrialJet(i){if(!TRIAL_JETS.includes(i)||owned[i])return -1;owned[i]=true;saveAll();return i}
-const HANG_N=JETS.findIndex(j=>j.story);
+const HANG=JETS.map((j,i)=>j.story?-1:i).filter(i=>i>=0),HANG_N=HANG.length;
 const B2=JETS.findIndex(j=>j.name==='B-2 Spirit'),B2_CHANCE=0.0001,MYTHICS=[B2]; // add more mythic jet indexes to MYTHICS
 const WAR=JETS.map((j,i)=>j.rarity===6?i:-1).filter(i=>i>=0),WAR_W=[38,32,24,6];
 const VINT=JETS.map((j,i)=>j.rarity===5?i:-1).filter(i=>i>=0);
@@ -376,9 +377,18 @@ const MODES=[
   {id:'story',name:'STORY MODE',ic:'📜', col:'#e8c9a0',rule:'Wings of War',desc:'Follow the Whitaker family through two world wars, 1916 to 1965.'},
   {id:'dogfight',name:'DOGFIGHT',ic:'✈️', col:'#d4a373',rule:'WW1 squadrons',desc:'Biplane squadrons and balloons. An ace pilot every 3rd wave.'},
   {id:'protect',name:'PROTECT',ic:'🌍',col:'#4ade80',rule:'Save the planet',desc:'Aliens dive at Earth. Hold the line.'},
-  {id:'trial',name:'TRIALS',ic:'🏆',col:'#f4c430',rule:'Earn jets',desc:'Reach wave 10, 20, then 30 to unlock the trial jets.'}
+  {id:'trial',name:'TRIALS',ic:'🏆',col:'#f4c430',rule:'Earn jets',desc:'Brutal challenges. Clear them, then claim exclusive trial jets.'}
 ];
-const modeCard=i=>({x:16+(i%2)*232,y:84+Math.floor(i/2)*100,w:216,h:96});
+let modeScroll=0,modeDrag=null;const MODE_MAX=80;
+const modeCard=i=>({x:16+(i%2)*232,y:84+Math.floor(i/2)*100-modeScroll,w:216,h:96});
+function modeEnsure(){const top=84+Math.floor(modeSel/2)*100;if(top-modeScroll<70)modeScroll=top-70;if(top+96-modeScroll>H-48)modeScroll=top+96-(H-48);modeScroll=clamp(modeScroll,0,MODE_MAX)}
+function modesTap(p){
+  if(inR(p,hb.back)){state='menu';return}
+  if(p.y<64||p.y>H-44)return;
+  for(let i=0;i<SPEEDS.length;i++)if(inR(p,spdBtn(i))){spdSet(SPEEDS[i]);return}
+  for(let i=0;i<MODES.length;i++)if(inR(p,modeCard(i))){modeSel=i;startMode(MODES[i].id);return}
+}
+cv.addEventListener('wheel',e=>{if(state==='modes'){e.preventDefault();modeScroll=clamp(modeScroll+e.deltaY*.5,0,MODE_MAX)}},{passive:false});
 let casMode='slots',casBet=50,casSpinning=false,casT=0,casReels=[0,0,0],casTarget=[0,0,0],casResult='',casFlash=0,casRouAngle=0,casRouTarget=0,casWin=0,casRouFrom=0,casRouSeg=0,casRouLast=-1,casBetType='green',casBetNum=1,casSpinBet=null,casRS=[0,0,0],casRD=[0,0,0],casStop=[0,0,0];
 const rouMod=a=>((a%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
 const rouSegAt=a=>Math.floor(rouMod(-Math.PI/2-a)/(Math.PI/4))%8;   // which segment is under the pointer (top) at wheel angle a
@@ -402,7 +412,7 @@ const ACHIEVE=[
 function loadProfile(name,dev){
   user=name;isDev=dev;pkey=name.toLowerCase();
   best=0;bank=0;owned=Array(JETS.length).fill(false);owned[0]=true;jetStars=Array(JETS.length).fill(0);jetEvo=Array(JETS.length).fill(0);jetDup=Array(JETS.length).fill(0);jetSel=0;campaignProg=0;storyProg=0;
-  pityEpic=0;pityLeg=0;pxp=0;plvl=1;dailyQ=[];dailyDay='';ach={};stats={kills:0,maxwave:0,packs:0};
+  pityEpic=0;pityLeg=0;pxp=0;plvl=1;dailyQ=[];dailyDay='';ach={};stats={kills:0,maxwave:0,packs:0,gambled:0,topbank:0};
   try{best=+localStorage.getItem('starfall_best_'+pkey)||0}catch(e){}
   let sv={};
   try{
@@ -424,7 +434,7 @@ function loadProfile(name,dev){
   campaignProg=sv.camp|0;storyProg=sv.sp|0;pityEpic=sv.pe|0;pityLeg=sv.pl|0;pxp=sv.xp|0;plvl=Math.max(1,sv.lv|1);
   dailyDay=sv.dday||'';dailyQ=Array.isArray(sv.dq)?sv.dq:[];
   ach=sv.ach&&typeof sv.ach==='object'?sv.ach:{};
-  if(sv.stats){stats.kills=sv.stats.kills|0;stats.maxwave=sv.stats.maxwave|0;stats.packs=sv.stats.packs|0}
+  if(sv.stats){stats.kills=sv.stats.kills|0;stats.maxwave=sv.stats.maxwave|0;stats.packs=sv.stats.packs|0;stats.gambled=+sv.stats.gambled||0;stats.topbank=+sv.stats.topbank||0}
   refreshDaily();
   modeBest=(sv.mb&&typeof sv.mb==='object')?sv.mb:{};if(!modeBest.endless)modeBest.endless=best;
   gameMode=MODES.some(m=>m.id===sv.gm)?sv.gm:'endless';best=modeBest[gameMode]||0;
@@ -437,7 +447,7 @@ let tamperMsg=false;
 function writeSave(k,raw){try{localStorage.setItem('starfall_save_'+k,raw);localStorage.setItem('starfall_sig_'+k,sigOf(k,raw))}catch(e){}}
 let lastSave=0,asvT=0;
 function flashSaved(){lastSave=Date.now();const a=document.getElementById('asv');if(!a)return;a.classList.add('on');clearTimeout(asvT);asvT=setTimeout(()=>a.classList.remove('on'),1400)}
-function saveAll(){if(!pkey)return;modeBest[gameMode]=Math.max(modeBest[gameMode]||0,best);try{writeSave(pkey,JSON.stringify({bank:isDev?999999999:bank,owned,stars:jetStars,evo:jetEvo,dup:jetDup,sel:jetSel,traits:Object.keys(tOwn).filter(k=>tOwn[k]),got:got.slice(-300),camp:campaignProg,sp:storyProg,pe:pityEpic,pl:pityLeg,xp:pxp,lv:plvl,dday:dailyDay,dq:dailyQ,ach,stats,mb:modeBest,gm:gameMode,spd:gameSpd,hq:hqSave()}))}catch(e){}}
+function saveAll(){if(!pkey)return;if(!isDev)stats.topbank=Math.max(stats.topbank||0,bank);modeBest[gameMode]=Math.max(modeBest[gameMode]||0,best);try{writeSave(pkey,JSON.stringify({bank:isDev?999999999:bank,owned,stars:jetStars,evo:jetEvo,dup:jetDup,sel:jetSel,traits:Object.keys(tOwn).filter(k=>tOwn[k]),got:got.slice(-300),camp:campaignProg,sp:storyProg,pe:pityEpic,pl:pityLeg,xp:pxp,lv:plvl,dday:dailyDay,dq:dailyQ,ach,stats,mb:modeBest,gm:gameMode,spd:gameSpd,hq:hqSave()}))}catch(e){}}
 function checkAch(){
   const vals={kills:stats.kills,maxwave:stats.maxwave,packs:stats.packs,stars:jetStars.reduce((a,b)=>a+(b|0),0),camp:campaignProg,plvl:plvl,bank:bank};
   ACHIEVE.forEach(a=>{
@@ -894,13 +904,13 @@ const hb={
   rstBtn:{x:W/2-110,y:H/2+34,w:220,h:46},
   exitBtn:{x:W/2-110,y:H/2+90,w:220,h:46},
   overBtn:{x:W/2-90,y:H/2+150,w:180,h:38},
-  casSlot:{x:30,y:62,w:200,h:40},
-  casRou:{x:250,y:62,w:200,h:40},
+  casSlot:{x:14,y:62,w:150,h:40},casBj:{x:318,y:62,w:148,h:40},
+  casRou:{x:166,y:62,w:150,h:40},
   casBetM:{x:64,y:490,w:56,h:40},
   casBetP:{x:W-120,y:490,w:56,h:40},
   casGo:{x:W/2-120,y:566,w:240,h:56}
 };
-function hangarGo(d){hIdx=(hIdx+d+HANG_N)%HANG_N;hSlide=d;sfx('tick',600,.05,'triangle',.04,0,20)}
+function hangarGo(d){let p=HANG.indexOf(hIdx);if(p<0)p=0;hIdx=HANG[(p+d+HANG.length)%HANG.length];hSlide=d;sfx('tick',600,.05,'triangle',.04,0,20)}
 function casOpen(){casSpinning=false;casResult='';casWin=0;casFlash=0;state='casino'}
 const CAS_TYPES=[
   {id:'red',  label:'RED',  sub:'odd',  mult:1.9,col:'#ff5468',test:n=>n%2===1},
@@ -922,11 +932,11 @@ function casAdjBet(d){
   i=Math.max(0,Math.min(CAS_BETS.length-1,i+d));casBet=CAS_BETS[i];
   sfx('tick',500,.04,'triangle',.03);
 }
-function casPlay(){
+function casPlay(){if(casMode==='blackjack'){bjDeal();return}
   if(casSpinning)return;
   if(!isDev&&bank<casBet){denyT=.4;sfx('deny',160,.2,'sawtooth',.06,-60);return}
   if(!isDev)bank-=casBet;
-  casSpinning=true;casT=0;casResult='';casWin=0;casFlash=0;
+  gambled(casBet);casSpinning=true;casT=0;casResult='';casWin=0;casFlash=0;
   if(casMode==='slots'){
     casTarget=[(Math.random()*8)|0,(Math.random()*8)|0,(Math.random()*8)|0];
     // slight house edge: rare jackpot nudge
@@ -968,7 +978,7 @@ function casFinishRou(){
   else{casWin=0;casResult='MISS · number '+n;sfx('deny',180,.15,'sawtooth',.04,-40)}
   casSpinning=false;saveAll();
 }
-function updateCasino(dt){
+function updateCasino(dt){if(casMode==='blackjack'){denyT=Math.max(0,denyT-dt);bjUpdate(dt);return}
   denyT=Math.max(0,denyT-dt);
   if(!casSpinning){casFlash=Math.max(0,casFlash-dt);return}
   casT+=dt;
@@ -1015,7 +1025,7 @@ function drawReel(i,x,y,w,h){
   ctx.restore();
   rr(x,y,w,h,12);ctx.lineWidth=3;ctx.strokeStyle='#ffd166';ctx.stroke();
 }
-function drawCasino(){
+function drawCasino(){if(casMode==='blackjack'){drawBlackjack();return}
   /* backdrop */
   ctx.fillStyle='rgba(10,5,22,.88)';ctx.fillRect(0,0,W,H);
   let g=ctx.createRadialGradient(W/2,200,20,W/2,200,430);g.addColorStop(0,'rgba(255,70,150,.16)');g.addColorStop(1,'rgba(255,70,150,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
@@ -1030,7 +1040,7 @@ function drawCasino(){
   text('🪙 '+bank.toLocaleString(),W-70,33,15,'#ffd166');
 
   /* tabs */
-  for(const [r,lab,on,col] of [[hb.casSlot,'🎰 SLOTS',slots,'#ffd166'],[hb.casRou,'🎡 ROULETTE',rou,'#80ffdb']]){
+  casTabs();for(const [r,lab,on,col] of []){
     rr(r.x,r.y,r.w,r.h,20);
     ctx.fillStyle=on?col+'28':'rgba(255,255,255,.05)';ctx.fill();
     ctx.lineWidth=on?2.5:1.2;ctx.strokeStyle=on?col:'rgba(255,255,255,.22)';ctx.stroke();
@@ -1274,8 +1284,8 @@ function drawHangar(){
   }
   // dots
   const gap=N>14?10:N>10?13:16;
-  for(let i=0;i<N;i++){
-    ctx.beginPath();ctx.arc(W/2+(i-(N-1)/2)*gap,own?462:380,i===hIdx?5:3,0,6.283);
+  for(let k=0;k<N;k++){const i=HANG[k];
+    ctx.beginPath();ctx.arc(W/2+(k-(N-1)/2)*gap,own?462:380,i===hIdx?5:3,0,6.283);
     ctx.fillStyle=owned[i]?(i===hIdx?'#fff':RARITY_COL[JETS[i].rarity]):'rgba(255,255,255,.15)';
     ctx.fill();
     if(i===jetSel){ctx.strokeStyle='#ffd166';ctx.lineWidth=1.5;ctx.stroke()}
@@ -1379,6 +1389,13 @@ addEventListener('keydown',e=>{
     return;
   }
   if(hqKey(k))return;
+  if(state==='trials'){
+    if(k==='escape'||k==='b'){state='modes';return}
+    if(k==='arrowup'||k==='w')trSel=(trSel+JTRIALS.length-1)%JTRIALS.length;
+    else if(k==='arrowdown'||k==='s')trSel=(trSel+1)%JTRIALS.length;
+    else if(k==='enter'||k===' ')jtAct(trSel);
+    return;
+  }
   if(state==='modes'){
     if(k==='escape'||k==='b'||k==='e'){state='menu';return}
     if(k==='z'){spdCycle();return}
@@ -1386,7 +1403,7 @@ addEventListener('keydown',e=>{
     if(k==='arrowleft'||k==='a'){if(modeSel%2===1)modeSel--}
     if(k==='arrowright'||k==='d'){if(modeSel%2===0)modeSel++}
     if(k==='arrowup'||k==='w')modeSel=(modeSel+MODES.length-2)%MODES.length;
-    if(k==='arrowdown'||k==='s')modeSel=(modeSel+2)%MODES.length;
+    if(k==='arrowdown'||k==='s')modeSel=(modeSel+2)%MODES.length;modeEnsure();
     return;
   }
   if(state==='traits'){
@@ -1418,6 +1435,7 @@ addEventListener('keydown',e=>{
   if(state==='quests'){if(k==='escape'||k==='b'||k==='q')state='menu';return}
   if(state==='achieve'){if(k==='escape'||k==='b'||k==='a')state='menu';return}
   if(state==='casino'){
+    if(casMode==='blackjack'&&bjKey(k))return;
     if(k==='escape'||k==='b'){if(!casSpinning)state='menu';return}
     if(k==='arrowleft'||k==='a')casAdjBet(-1);
     if(k==='arrowright'||k==='d')casAdjBet(1);
@@ -1429,6 +1447,7 @@ addEventListener('keydown',e=>{
     if(k==='enter'||k===' ')casPlay();
     if(k==='1'&&!casSpinning){casMode='slots';casResult=''}
     if(k==='2'&&!casSpinning){casMode='roulette';casResult=''}
+    if(k==='3'&&!casSpinning){casMode='blackjack';casResult=''}
     return;
   }
   if(k==='h'&&state==='menu'){state='hangar';hIdx=jetSel;return}
@@ -1447,6 +1466,7 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false});
 cv.addEventListener('pointerdown',e=>{
   const p=pos(e);cv.setPointerCapture(e.pointerId);
+  if(state==='modes'){modeDrag={p,y:p.y,s:modeScroll,moved:false};return}
   if(state==='story'){advanceStory();return}
   if(state==='modes'){
     if(inR(p,hb.back)){state='menu';return}
@@ -1489,12 +1509,15 @@ cv.addEventListener('pointerdown',e=>{
     else if(inR(p,hb.rstBtn)){if(isCampaign)startCampaignLevel(campLevel);else startGame(false)}
     else state='play';
   }
+  else if(state==='trials'){trialsClick(p)}
   else if(state==='quests'||state==='achieve'){if(inR(p,hb.back))state='menu'}
   else if(hqIs(state)||state==='tour'){hqClick(p)}
   else if(state==='casino'){
     if(inR(p,hb.back)){if(!casSpinning)state='menu';return}
     if(inR(p,hb.casSlot)){if(!casSpinning){casMode='slots';casResult=''}return}
     if(inR(p,hb.casRou)){if(!casSpinning){casMode='roulette';casResult=''}return}
+    if(inR(p,hb.casBj)){if(!casSpinning){casMode='blackjack';casResult=''}return}
+    if(casMode==='blackjack'&&bjClick(p))return;
     if(casMode==='roulette'){
       for(let i=0;i<CAS_TYPES.length;i++)if(inR(p,casChip(i))){casSetType(CAS_TYPES[i].id);return}
       for(let i=0;i<8;i++)if(inR(p,casNum(i))){if(!casSpinning){casBetType='num';casBetNum=i+1;sfx('tick',560,.04,'triangle',.03)}return}
@@ -1522,9 +1545,12 @@ cv.addEventListener('pointerdown',e=>{
     ptr.active=true;ptr.x=p.x;ptr.y=p.y;
   }
 });
-cv.addEventListener('pointermove',e=>{if(ptr.active){const p=pos(e);ptr.x=p.x;ptr.y=p.y}});
-const up=()=>{ptr.active=false};
-cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('pointermove',e=>{
+  if(ptr.active){const p=pos(e);ptr.x=p.x;ptr.y=p.y}
+  if(modeDrag){const p=pos(e),dy=p.y-modeDrag.y;if(Math.abs(dy)>8)modeDrag.moved=true;if(modeDrag.moved)modeScroll=clamp(modeDrag.s-dy,0,MODE_MAX)}
+});
+const up=e=>{ptr.active=false;if(modeDrag){const d=modeDrag;modeDrag=null;if(!d.moved&&state==='modes')modesTap(d.p)}};
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',()=>{ptr.active=false;modeDrag=null});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='play')state='pause'});
 
 /* ---------- state ---------- */
@@ -1815,7 +1841,7 @@ function update(dt){
           pBul.push({x:P.x+o,y:P.y-10,vx:0,vy:-900,r:6,dmg:J.dmg*.7,pierce:2,hit:null,laser:true});
         }
       }
-      sfx('shoot',520,.06,'square',.018,-260,60);
+      sfx('shoot',520,.06,'square',.018,-260,60);if(laserT>0)sfx('laser',1400,.16,'sawtooth',.045,-1100,70);
     }
     if(missileT>0&&Math.floor(time*8)%3===0){
       const tgt=enemies.reduce((best,e)=>{
@@ -2197,6 +2223,7 @@ function draw(){
   else if(state==='quests')drawQuests();
   else if(state==='achieve')drawAchieve();
   else if(state==='casino')drawCasino();
+  else if(state==='trials')drawTrials();
   else if(state==='ptpdiff')ptpDiffDraw();
   else if(state==='civ')drawCiv();
   else if(hqIs(state))drawHQ();
@@ -2315,7 +2342,7 @@ function drawHUD(){
 }
 
 /* ---------- menu decoration: nebula, planet, sparkles, shooting stars, frame ---------- */
-const MENU_ST=new Set(['menu','trade','hangar','traits','modes','campselect','story','quests','achieve','casino','prof']);
+const MENU_ST=new Set(['menu','trade','hangar','traits','modes','campselect','story','quests','achieve','casino','prof','trials']);
 const MD_TINT={menu:[91,140,255],trade:[91,140,255],hangar:[143,180,255],traits:[180,110,255],modes:[255,140,80],campselect:[80,200,255],story:[255,200,110],quests:[90,220,150],achieve:[255,210,90],casino:[255,80,140],prof:[143,180,255]};
 const mdStars=Array.from({length:26},(_,i)=>({x:(i*97%480),y:(i*211%720),p:i*1.7,s:1+(i%3)*.6}));
 let mdShoot=null,mdNext=2;
@@ -2470,7 +2497,7 @@ function drawCiv(){
 }
 function startMode(id){
   trialRun=false;
-  if(id==='trial'){trialStart();return}
+  if(id==='trial'){state='trials';trSel=0;return}
   if(id==='hq')id='endless';
   if(id==='story'){storyActive=true;gameMode='story';best=modeBest.story||0;state='campselect';campSel=Math.min(PROG(),CAMP().length-1);return}
   if(id==='campaign'){storyActive=false;gameMode='campaign';best=modeBest.campaign||0;state='campselect';campSel=Math.min(PROG(),CAMP().length-1);return}
@@ -2478,6 +2505,30 @@ function startMode(id){
   gameMode=id;best=modeBest[id]||0;startGame(false);
 }
 function drawModes(){
+  ctx.fillStyle='rgba(5,6,15,.55)';ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.beginPath();ctx.rect(0,64,W,H-108);ctx.clip();
+  MODES.forEach((m,i)=>{
+    const r=modeCard(i),sel=i===modeSel,cur=m.id===gameMode;
+    ctx.save();if(sel){ctx.shadowColor=m.col;ctx.shadowBlur=16}
+    rr(r.x,r.y,r.w,r.h,16);const g=ctx.createLinearGradient(0,r.y,0,r.y+r.h);g.addColorStop(0,m.col+'30');g.addColorStop(1,'rgba(10,12,34,.92)');
+    ctx.fillStyle=g;ctx.fill();ctx.restore();
+    rr(r.x,r.y,r.w,r.h,16);ctx.lineWidth=sel?3:1.5;ctx.strokeStyle=sel?m.col:m.col+'77';ctx.stroke();
+    text(m.ic,r.x+34,r.y+26,28,'#fff','center','400');
+    text(m.name,r.x+62,r.y+20,16,m.col,'left','800');
+    text(m.rule,r.x+62,r.y+37,10,'#9bb','left','700');
+    wrapLines(m.desc,34).forEach((ln,j)=>text(ln,r.x+14,r.y+56+j*12,10.5,'#c8d4ff','left','500'));
+    text(m.id==='campaign'?Math.min(campaignProg,CAMPAIGN.length)+'/'+CAMPAIGN.length+' missions':m.id==='story'?Math.min(storyProg,STORY.length)+'/'+STORY.length+' chapters':m.id==='trial'?JTRIALS.filter(d=>(hq.tc||{})[d.id]===2).length+'/'+JTRIALS.length+' jets claimed':'BEST '+(modeBest[m.id]||0).toLocaleString(),r.x+14,r.y+r.h-7,12,'#ffd166','left','700');
+    if(cur)text('● LAST',r.x+r.w-12,r.y+16,10,'#80ffdb','right','700');
+  });
+  drawSpdRow();
+  ctx.restore();
+  btn(hb.back,'← BACK','#8fb4ff',null,15);
+  text('GAME MODES',W/2,32,26,'#fff');text('🪙 '+bank.toLocaleString(),W-16,32,16,'#ffd166','right');
+  const th=Math.max(30,(H-108)*(H-108)/(H-108+MODE_MAX));
+  rr(W-7,64+(H-108-th)*(modeScroll/MODE_MAX),4,th,2);ctx.fillStyle='rgba(143,180,255,.45)';ctx.fill();
+  text(modeScroll<MODE_MAX-2?'▼ scroll down for more (Trials)  ·  wheel or drag':'tap a mode to play  ·  arrows + Enter',W/2,H-30,12,'#8aa','center','500');
+}
+function drawModesOld(){
   ctx.fillStyle='rgba(5,6,15,.55)';ctx.fillRect(0,0,W,H);
   btn(hb.back,'← BACK','#8fb4ff',null,15);
   text('GAME MODES',W/2,32,26,'#fff');text('🪙 '+bank.toLocaleString(),W-16,32,16,'#ffd166','right');
@@ -2555,12 +2606,20 @@ function frame(t){
 /* ---------- game speed ---------- */
 const SPEEDS=[1,1.5,2,3];
 let gameSpd=1;
-const spdBtn=i=>({x:16+i*114,y:610,w:106,h:38});
+const spdBtn=i=>({x:16+i*114,y:714-modeScroll,w:106,h:38});
 const spdHud={x:W-74,y:58,w:58,h:24};
 function spdBonus(){return(isCampaign||state!=='play')?1:1+(gameSpd-1)*.5}
 function spdSet(v){gameSpd=v;saveAll();sfx('tick',560+v*80,.06,'triangle',.04);say('Speed '+v+'x')}
 function spdCycle(){spdSet(SPEEDS[(SPEEDS.indexOf(gameSpd)+1)%SPEEDS.length])}
 function drawSpdRow(){
+  const o=698-modeScroll;
+  text('GAME SPEED',16,o,11,'#8fb4ff','left','700');
+  text(gameSpd>1?'+'+Math.round((gameSpd-1)*50)+'% score and coins · not in Campaign':'Faster games pay more · press Z to change',W-16,o,10,gameSpd>1?'#80ffdb':'#8aa','right','600');
+  SPEEDS.forEach((v,i)=>{const r=spdBtn(i),on=v===gameSpd,c=on?'#ffd166':'#8fb4ff';
+    rr(r.x,r.y,r.w,r.h,10);ctx.fillStyle=on?'rgba(255,209,102,.18)':'rgba(255,255,255,.05)';ctx.fill();ctx.lineWidth=on?2.5:1.5;ctx.strokeStyle=c;ctx.stroke();
+    text('⚡ '+v+'x',r.x+r.w/2,r.y+r.h/2+1,14,on?'#fff':c)});
+}
+function drawSpdRowOld(){
   text('GAME SPEED',16,596,11,'#8fb4ff','left','700');
   text(gameSpd>1?'+'+Math.round((gameSpd-1)*50)+'% score and coins · not in Campaign':'Faster games pay more · press Z to change',W-16,596,10,gameSpd>1?'#80ffdb':'#8aa','right','600');
   SPEEDS.forEach((v,i)=>{const r=spdBtn(i),on=v===gameSpd,c=on?'#ffd166':'#8fb4ff';
@@ -2627,7 +2686,7 @@ const HQ_SCR={
 };
 const hqIs=s=>!!HQ_SCR[s];
 const HQ_Y0=142;
-function hqBlank(){return{tour:0,wk:{k:'',c:0,s:0},dd:'',ds:0,nm:'',wing:{},squad:[],pets:{},pet:'',mats:{scrap:0,crystal:0,core:0},gear:{},eqW:'',eqA:'',tokens:3,tokDay:'',pm:0,pl:0,pulls:0,raids:{},trials:{}}}
+function hqBlank(){return{tour:0,wk:{k:'',c:0,s:0},dd:'',ds:0,nm:'',wing:{},squad:[],pets:{},pet:'',mats:{scrap:0,crystal:0,core:0},gear:{},eqW:'',eqA:'',tokens:3,tokDay:'',pm:0,pl:0,pulls:0,raids:{},trials:{},tc:{}}}
 let hq=hqBlank(),hqFx={dmg:0,rate:0,hp:0,shield:0,bomb:0,coin:0,xp:0,pierce:0,regen:0};
 let hqTab=0,hqHits=[],hqTop=[],hqFocus=0,kbFocus=false,hqMsg='',hqMsgT=0,hqSel=null,hqRes=null,hqResT=0,hqRankKey='lvl',hqRankCache=null;
 let hqRun=null,hqWings=[],hqRunMats={scrap:0,crystal:0,core:0},hqRegenT=0,hqOver=null,hqWon=false;
@@ -2635,7 +2694,7 @@ const hqObj=o=>(o&&typeof o==='object'&&!Array.isArray(o))?o:{};
 function hqLoad(sv,dev){
   hq=hqBlank();
   const s=hqObj(sv&&sv.hq);
-  hq.nm=user;hq.pAuto=!!s.pAuto;hq.pAutoOn=!!s.pAutoOn;hq.wing=hqObj(s.wing);hq.pets=hqObj(s.pets);hq.gear=hqObj(s.gear);hq.raids=hqObj(s.raids);hq.trials=hqObj(s.trials);
+  hq.nm=user;hq.pAuto=!!s.pAuto;hq.pAutoOn=!!s.pAutoOn;hq.wing=hqObj(s.wing);hq.pets=hqObj(s.pets);hq.gear=hqObj(s.gear);hq.raids=hqObj(s.raids);hq.trials=hqObj(s.trials);hq.tc=hqObj(s.tc);
   hq.squad=Array.isArray(s.squad)?s.squad.filter(id=>WINGS.some(w=>w.id===id)).slice(0,3):[];
   hq.pet=typeof s.pet==='string'?s.pet:'';hq.eqW=s.eqW||'';hq.eqA=s.eqA||'';
   const m=hqObj(s.mats);hq.mats={scrap:m.scrap|0,crystal:m.crystal|0,core:m.core|0};
@@ -2791,7 +2850,7 @@ function hqWinCheck(){
   if(!done)return false;
   hqWin();return true;
 }
-function hqWin(){
+function hqWin(){if(hqRun&&hqRun.kind==='jtrial'){jtWin();return}
   const r=hqRun,d=r.def,lines=['★ '+r.name+' cleared!'];
   const first=r.kind==='trial'?!hq.trials[d.id]:r.kind==='weekly'?!(hq.wk.k===wkKey()&&hq.wk.c):false;
   const rw=(r.kind==='weekly'&&!first)?{coin:300}:d.rew;
@@ -3120,10 +3179,10 @@ function hqRanks(){
       const key=k.slice(14);if(key===pkey)continue;
       let sv={};try{sv=JSON.parse(localStorage.getItem(k)||'{}')}catch(e){}
       const mb=hqObj(sv.mb),st=hqObj(sv.stats);
-      rows.push({name:(sv.hq&&sv.hq.nm)||key,lvl:sv.lv|0||1,wave:st.maxwave|0,score:mb.endless|0,kills:st.kills|0,week:(sv.hq&&sv.hq.wk&&sv.hq.wk.k===wkKey())?sv.hq.wk.s|0:0,me:false});
+      rows.push({coins:+st.topbank||0,gamb:+st.gambled||0,name:(sv.hq&&sv.hq.nm)||key,lvl:sv.lv|0||1,wave:st.maxwave|0,score:mb.endless|0,kills:st.kills|0,week:(sv.hq&&sv.hq.wk&&sv.hq.wk.k===wkKey())?sv.hq.wk.s|0:0,me:false});
     }
   }catch(e){}
-  rows.push({name:user,lvl:plvl,wave:stats.maxwave|0,score:modeBest.endless|0,kills:stats.kills|0,week:hq.wk.k===wkKey()?hq.wk.s|0:0,me:true});
+  rows.push({coins:Math.max(stats.topbank||0,isDev?0:bank),gamb:stats.gambled||0,name:user,lvl:plvl,wave:stats.maxwave|0,score:modeBest.endless|0,kills:stats.kills|0,week:hq.wk.k===wkKey()?hq.wk.s|0:0,me:true});
   hqRankCache=rows;return rows;
 }
 function tabPilot(){
@@ -3146,7 +3205,7 @@ function tabPilot(){
   hqBtn(16,y+22,W-32,40,'💾 SAVE BACKUP  (export / import)','#8fb4ff',svShow,false,13);
 }
 function tabRanks(){
-  const keys=[['lvl','LEVEL'],['wave','WAVE'],['score','SCORE'],['kills','KILLS'],['week','WEEK']],bw=(W-32-24)/5;
+  const keys=[['lvl','LEVEL'],['wave','WAVE'],['coins','COINS'],['gamb','GAMBLED']],bw=(W-32-18)/4;
   keys.forEach((k,i)=>hqBtn(16+i*(bw+6),HQ_Y0,bw,30,k[1],hqRankKey===k[0]?'#ffd166':'#8fb4ff',()=>{hqRankKey=k[0]},false,11));
   const rows=hqRanks().slice().sort((a,b)=>b[hqRankKey]-a[hqRankKey]||b.lvl-a.lvl).slice(0,9);
   rows.forEach((r,i)=>{
@@ -3154,8 +3213,8 @@ function tabRanks(){
     rr(16,y,W-32,40,10);ctx.fillStyle=r.me?'rgba(255,209,102,.14)':'rgba(255,255,255,.05)';ctx.fill();ctx.lineWidth=r.me?2:1;ctx.strokeStyle=r.me?'#ffd166':'rgba(255,255,255,.12)';ctx.stroke();
     text('#'+(i+1),34,y+20,14,i<3?['#ffd166','#cfd8e6','#e0a070'][i]:'#8aa');
     text(r.name+(r.me?' (you)':''),64,y+14,13,'#fff','left');
-    text('LV '+r.lvl+'  ·  wave '+r.wave+'  ·  '+r.kills+' kills',64,y+30,10,'#9bb','left','500');
-    text((r[hqRankKey]|0).toLocaleString(),W-28,y+20,16,'#ffd166','right');
+    text('LV '+r.lvl+' · wave '+r.wave+' · 🪙 '+Math.floor(r.coins).toLocaleString()+' · gambled '+Math.floor(r.gamb).toLocaleString(),64,y+30,10,'#9bb','left','500');
+    text(Math.floor(r[hqRankKey]||0).toLocaleString(),W-28,y+20,16,'#ffd166','right');
   });
   text('Pilots who have logged in on this device',W/2,H-72,11,'#6a7','center','500');
 }
@@ -3192,6 +3251,187 @@ function tabScores(){
   });
   const myRank=sc.findIndex(r=>r.me);
   text(myRank>=0?'Your rank: #'+(myRank+1)+' of '+sc.length:'Pilots who have played on this device',W/2,H-72,11,'#6a7','center','500');
+}
+
+/* ---------- BLACKJACK ---------- */
+const BJ_R=['A','2','3','4','5','6','7','8','9','10','J','Q','K'],BJ_S=['♠','♥','♦','♣'];
+const bj={phase:'bet',deck:[],p:[],d:[],bet:0,dbl:false,hide:true,dT:0};
+function gambled(n){if(!isDev)stats.gambled=(stats.gambled||0)+n}
+function bjNewDeck(){const d=[];for(let k=0;k<4;k++)for(let r=0;r<13;r++)for(let s=0;s<4;s++)d.push({r,s});for(let i=d.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[d[i],d[j]]=[d[j],d[i]]}return d}
+function bjDraw(){if(bj.deck.length<20)bj.deck=bjNewDeck();return bj.deck.pop()}
+function bjVal(h){let t=0,a=0;for(const c of h){if(c.r===0){a++;t+=11}else t+=Math.min(10,c.r+1)}while(t>21&&a>0){t-=10;a--}return t}
+function bjDeal(){
+  if(bj.phase!=='bet')return;
+  if(!isDev&&bank<casBet){denyT=.4;sfx('deny',160,.2,'sawtooth',.06,-60);return}
+  if(!isDev)bank-=casBet;
+  gambled(casBet);
+  bj.bet=casBet;bj.dbl=false;bj.hide=true;bj.p=[bjDraw(),bjDraw()];bj.d=[bjDraw(),bjDraw()];
+  casResult='';casWin=0;casFlash=0;casSpinning=true;bj.phase='play';
+  sfx('tick',520,.05,'triangle',.04);saveAll();
+  if(bjVal(bj.p)===21||bjVal(bj.d)===21)bjFinish();
+}
+function bjHit(){if(bj.phase!=='play')return;bj.p.push(bjDraw());sfx('tick',600,.05,'triangle',.04);const v=bjVal(bj.p);if(v>21)bjFinish();else if(v===21)bjStand()}
+function bjStand(){if(bj.phase!=='play')return;bj.phase='dealer';bj.hide=false;bj.dT=.6}
+function bjDouble(){
+  if(bj.phase!=='play'||bj.p.length!==2)return;
+  if(!isDev&&bank<bj.bet){denyT=.4;sfx('deny',160,.2,'sawtooth',.06,-60);return}
+  if(!isDev)bank-=bj.bet;gambled(bj.bet);bj.bet*=2;bj.dbl=true;
+  bj.p.push(bjDraw());
+  if(bjVal(bj.p)>21)bjFinish();else bjStand();
+}
+function bjUpdate(dt){
+  casFlash=Math.max(0,casFlash-dt);
+  if(bj.phase==='dealer'){bj.dT-=dt;if(bj.dT<=0){if(bjVal(bj.d)<17){bj.d.push(bjDraw());bj.dT=.6;sfx('tick',440,.05,'triangle',.04)}else bjFinish()}}
+}
+function bjFinish(){
+  const pv=bjVal(bj.p),dv=bjVal(bj.d),pn=bj.p.length===2&&pv===21,dn=bj.d.length===2&&dv===21;
+  bj.hide=false;bj.phase='bet';casSpinning=false;
+  let mult=0,msg;
+  if(pv>21)msg='BUST';
+  else if(pn&&dn){mult=1;msg='PUSH · both blackjack'}
+  else if(pn){mult=2.5;msg='BLACKJACK  ×2.5'}
+  else if(dn)msg='DEALER BLACKJACK';
+  else if(dv>21){mult=2;msg='DEALER BUSTS  ×2'}
+  else if(pv>dv){mult=2;msg='YOU WIN  ×2'}
+  else if(pv===dv){mult=1;msg='PUSH · bet returned'}
+  else msg='DEALER WINS';
+  const pay=Math.floor(bj.bet*mult);bank+=pay;
+  casResult=msg;casWin=mult>1?pay:0;
+  if(mult>1){casFlash=1;sfx('buy',660,.4,'triangle',.07,500);burst(W/2,230,'#ffd166',45,300,.8)}
+  else if(mult===0)sfx('deny',200,.15,'sawtooth',.04,-40);
+  saveAll();
+}
+function bjKey(k){
+  if(bj.phase==='play'){
+    if(k==='h'||k==='arrowup'||k==='w'){bjHit();return true}
+    if(k==='s'||k==='arrowdown'){bjStand();return true}
+    if(k==='x'){bjDouble();return true}
+    return k==='enter'||k===' ';
+  }
+  if(bj.phase==='dealer')return k==='enter'||k===' ';
+  return false;
+}
+const bjB=i=>({x:24+i*148,y:414,w:136,h:44});
+function bjClick(p){
+  if(bj.phase!=='play')return false;
+  if(inR(p,bjB(0))){bjHit();return true}
+  if(inR(p,bjB(1))){bjStand();return true}
+  if(inR(p,bjB(2))){bjDouble();return true}
+  return false;
+}
+function casTabs(){
+  [[hb.casSlot,'🎰 SLOTS','slots','#ffd166'],[hb.casRou,'🎡 ROULETTE','roulette','#80ffdb'],[hb.casBj,'🃏 BLACKJACK','blackjack','#8fb4ff']].forEach(([r,lab,m,col])=>{
+    const on=casMode===m;rr(r.x,r.y,r.w,r.h,20);
+    ctx.fillStyle=on?col+'28':'rgba(255,255,255,.05)';ctx.fill();
+    ctx.lineWidth=on?2.5:1.2;ctx.strokeStyle=on?col:'rgba(255,255,255,.22)';ctx.stroke();
+    text(lab,r.x+r.w/2,r.y+r.h/2+1,13,on?col:'#8fa0c8');
+  });
+}
+function bjCard(x,y,c,hide){
+  rr(x,y,52,74,7);
+  if(hide){ctx.fillStyle='#2d4bd0';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#fff';ctx.stroke();text('✦',x+26,y+37,20,'#bcd0ff','center','400');return}
+  ctx.fillStyle='#fff';ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle='#888';ctx.stroke();
+  const col=(c.s===1||c.s===2)?'#d0243a':'#111';
+  text(BJ_R[c.r],x+14,y+15,15,col);text(BJ_S[c.s],x+14,y+32,14,col,'center','400');text(BJ_S[c.s],x+27,y+54,22,col,'center','400');
+}
+function bjHand(h,y,hideSecond){const x0=W/2-((h.length-1)*34+52)/2;h.forEach((c,i)=>bjCard(x0+i*34,y,c,hideSecond&&i===1))}
+function drawBlackjack(){
+  ctx.fillStyle='rgba(10,5,22,.88)';ctx.fillRect(0,0,W,H);
+  let g=ctx.createRadialGradient(W/2,260,20,W/2,260,430);g.addColorStop(0,'rgba(60,200,120,.16)');g.addColorStop(1,'rgba(60,200,120,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  btn(hb.back,'← BACK',casSpinning?'#556':'#8fb4ff',null,15);
+  ctx.save();ctx.shadowColor='#ff3d9a';ctx.shadowBlur=14+Math.sin(time*3)*6;text('CASINO',W/2,32,30,'#ffd166');ctx.restore();
+  rr(W-128,14,116,36,18);ctx.fillStyle='rgba(255,209,102,.1)';ctx.fill();ctx.lineWidth=1.2;ctx.strokeStyle='rgba(255,209,102,.55)';ctx.stroke();
+  text('🪙 '+bank.toLocaleString(),W-70,33,15,'#ffd166');
+  casTabs();
+  const px=20,py=114,pw=440,ph=290;
+  rr(px,py,pw,ph,18);g=ctx.createLinearGradient(0,py,0,py+ph);g.addColorStop(0,'#10513c');g.addColorStop(1,'#08271f');ctx.fillStyle=g;ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#ffd166';ctx.stroke();
+  casBulbs(px,py,pw,ph,casFlash>0?16:5);
+  text('DEALER'+(bj.d.length?'  '+(bj.hide?'?':bjVal(bj.d)):''),W/2,132,13,'#cfe','center','700');
+  if(bj.d.length)bjHand(bj.d,142,bj.hide);
+  text('YOU'+(bj.p.length?'  '+bjVal(bj.p):''),W/2,236,13,'#cfe','center','700');
+  if(bj.p.length)bjHand(bj.p,246,false);else text('Set your stake and press DEAL',W/2,260,16,'#8fa0c8','center','600');
+  if(casResult)text(casResult+(casWin?'   +'+casWin.toLocaleString():''),W/2,350,20+casFlash*8,casWin?'#80ffdb':(casResult.startsWith('PUSH')?'#ffd166':'#ff8a95'));
+  if(bj.phase==='play'){
+    const can2=bj.p.length===2&&(isDev||bank>=bj.bet);
+    btn(bjB(0),'HIT  (H)','#4cc9f0',null,15);btn(bjB(1),'STAND  (S)','#ffd166',null,15);btn(bjB(2),'DOUBLE  (X)',can2?'#ff9f1c':'#556',null,14);
+  }else if(bj.phase==='dealer')text('Dealer plays…',W/2,436,16,'#8fa0c8','center','600');
+  else text('Blackjack pays ×2.5 · wins pay ×2 · dealer stands on 17',W/2,436,12,'#8aa','center','600');
+  const m=hb.casBetM,pl=hb.casBetP,dis=casSpinning;
+  btn(m,'−',dis?'#556':'#ff9f1c',null,22);btn(pl,'+',dis?'#556':'#80ffdb',null,22);
+  text('🪙 '+casBet.toLocaleString(),W/2,m.y+m.h/2+1,26,'#fff');text('STAKE',W/2,m.y-8,10,'#8aa','center','700');
+  const gb=hb.casGo,can=!casSpinning&&(isDev||bank>=casBet);
+  ctx.save();ctx.translate(denyT>0?Math.sin(denyT*60)*6:0,0);
+  btn(gb,casSpinning?'HAND IN PLAY':(!isDev&&bank<casBet?'NOT ENOUGH COINS':'DEAL  🪙 '+casBet.toLocaleString()),can?'#ffd166':'#667',can?'rgba(255,209,102,.16)':null,18);
+  ctx.restore();
+  text('H hit · S stand · X double · Enter deal · ←→ stake',W/2,H-44,10,'#6c78a8','center','500');
+  text('House edge applies · play for fun',W/2,H-26,11,'#556','center','500');
+}
+
+/* ---------- JET TRIALS (hard challenges, claimable jets) ---------- */
+// tc[id]: 0 = not cleared, 1 = cleared (reward waiting), 2 = claimed
+const JTRIALS=[
+  {id:'jt1',n:'Hawk Gauntlet',jet:'Trial Hawk',tag:'HARD',tc:'#ffb020',style:'wave',goal:15,goalTxt:'Survive to wave 15',mod:{fast:1},coin:1500,tier:3},
+  {id:'jt2',n:'Lynx Lockdown',jet:'Trial Lynx',tag:'VERY HARD',tc:'#ff7a45',style:'wave',goal:20,goalTxt:'Survive to wave 20',mod:{fast:1,nobomb:1,dmg:.85},coin:3500,crystal:3,tier:3},
+  {id:'jt3',n:'Crown Ordeal',jet:'Trial Crown',tag:'BRUTAL',tc:'#ff3d7f',style:'wave',goal:25,goalTxt:'Survive to wave 25',mod:{fast:1,hp1:1},coin:8000,crystal:6,core:2,tier:4},
+  {id:'jt4',n:'Omega Siege',jet:'Trial Omega',tag:'NIGHTMARE',tc:'#e63946',style:'boss',goal:8,goalTxt:'Defeat 8 bosses in a row',mod:{hp1:1,nobomb:1,bossHp:1.8},coin:15000,crystal:10,core:5,tier:4}
+];
+let trSel=0;
+const jtCard=i=>({x:16,y:78+i*134,w:W-32,h:126});
+const jtBtn=i=>{const r=jtCard(i);return{x:r.x+r.w-134,y:r.y+r.h-46,w:120,h:36}};
+function jtModTxt(d){const m=d.mod,a=[];if(m.hp1)a.push('ONE heart');if(m.fast)a.push('fast enemies');if(m.nobomb)a.push('no bombs or drones');if(m.bossHp)a.push('bosses ×'+m.bossHp+' HP');if(m.dmg&&m.dmg!==1)a.push('damage ×'+m.dmg);return a.join(' · ')}
+function jtAct(i){
+  const d=JTRIALS[i],c=hq.tc[d.id]|0;
+  if(c===2){toast('Already claimed: '+d.jet);return}
+  if(c===1)jtClaim(i);else hqStart('jtrial',d);
+}
+function jtClaim(i){
+  const d=JTRIALS[i];if((hq.tc[d.id]|0)!==1)return;
+  hq.tc[d.id]=2;bank+=d.coin;
+  if(d.crystal)hq.mats.crystal+=d.crystal;
+  if(d.core)hq.mats.core+=d.core;
+  const g=grantTrialJet(jIdx(d.jet));
+  if(g<0)bank+=1500;
+  const r=jtCard(i);burst(r.x+46,r.y+72,'#ffd166',40,280,.8);ring(r.x+46,r.y+72,'#ffd166',140,.6,5);
+  sfx('buy',560,.5,'triangle',.08,800);saveAll();
+  toast('Claimed '+d.jet+(g<0?' (already owned, +1,500 coins instead)':'')+' and 🪙 '+d.coin.toLocaleString());
+}
+function jtWin(){
+  const r=hqRun,d=r.def;
+  if(!hq.tc[d.id])hq.tc[d.id]=1;
+  hqOver={lines:['★ '+d.n+' cleared!','Open TRIALS to claim '+d.jet]};hqWon=true;
+  float(W/2,H*.4,'TRIAL CLEARED!','#80ffdb');ring(P.x,P.y,'#80ffdb',320,.9,6);flash=.4;
+  addXP(100+(d.tier||3)*50);saveBest();checkAch();saveAll();state='over';overT=0;
+}
+function trialsClick(p){
+  if(inR(p,hb.back)){state='modes';return}
+  for(let i=0;i<JTRIALS.length;i++){
+    if(inR(p,jtBtn(i))){trSel=i;jtAct(i);return}
+    if(inR(p,jtCard(i))){trSel=i;return}
+  }
+}
+function drawTrials(){
+  ctx.fillStyle='rgba(5,6,15,.6)';ctx.fillRect(0,0,W,H);
+  btn(hb.back,'← BACK','#8fb4ff',null,15);
+  text('TRIALS',W/2,32,26,'#fff');
+  text(JTRIALS.filter(d=>hq.tc[d.id]===2).length+' / '+JTRIALS.length+' jets claimed',W/2,60,12,'#f4c430','center','700');
+  JTRIALS.forEach((d,i)=>{
+    const r=jtCard(i),c=hq.tc[d.id]|0,sel=i===trSel,ji=jIdx(d.jet),jj=JETS[ji];
+    rr(r.x,r.y,r.w,r.h,14);ctx.fillStyle=c===2?'rgba(128,255,219,.08)':c===1?'rgba(255,209,102,.14)':'rgba(244,196,48,.08)';ctx.fill();
+    ctx.lineWidth=sel?3:1.5;ctx.strokeStyle=c===2?'#80ffdb':c===1?'#ffd166':sel?'#f4c430':'rgba(244,196,48,.45)';ctx.stroke();
+    text('TRIAL '+(i+1)+'  ·  '+d.n.toUpperCase(),r.x+14,r.y+20,14,'#fff','left');
+    text(d.tag,r.x+r.w-14,r.y+20,11,d.tc,'right','800');
+    ctx.save();ctx.globalAlpha=c===2?1:.6;ctx.translate(r.x+46,r.y+66);ctx.scale(1.5,1.5);drawJetBody(ji);ctx.restore();
+    text(jj.name,r.x+46,r.y+108,10,RARITY_COL[9],'center','700');
+    text(d.goalTxt,r.x+96,r.y+42,12,'#cfd8e6','left','700');
+    text(jtModTxt(d),r.x+96,r.y+60,11,'#ff9f6b','left','600');
+    text('Reward: 🪙 '+d.coin.toLocaleString()+(d.crystal?'  💎'+d.crystal:'')+(d.core?'  🔶'+d.core:'')+'  + '+jj.name,r.x+96,r.y+80,11,'#ffd166','left','600');
+    text(jj.desc,r.x+96,r.y+98,10,'#8aa','left','500');
+    const b=jtBtn(i);
+    if(c===2)btn(b,'CLAIMED ✓','#80ffdb',null,13);
+    else if(c===1)btn(b,'🎁 CLAIM','#ffd166','rgba(255,209,102,.2)',14);
+    else btn(b,'FIGHT','#f4c430','rgba(244,196,48,.15)',14);
+  });
+  text('Clear a trial, then press CLAIM to get the jet and rewards  ·  ↑↓ + Enter',W/2,H-30,11,'#8aa','center','500');
 }
 
 /* ---------- fonts, icons ---------- */
@@ -3450,7 +3690,56 @@ function musTick(){
     musNext+=sd;musStep++;
   }
 }
-setInterval(musTick,60);
+/* ---------- music v2: menu theme + calm-to-intense battle music ---------- */
+/* Original melodies written for this game (not copied from any existing song). Midi note numbers, 0 = rest, 32 steps per loop. */
+const MM_MEL=[76,0,76,0,76,0,72,76,79,0,0,0,67,0,0,0,72,0,67,0,64,0,0,0,69,0,71,0,70,69,67,0];
+const MM_BASS=[48,0,0,0,48,0,0,0,43,0,0,0,43,0,0,0,45,0,0,0,45,0,0,0,41,0,0,0,43,0,0,0];
+const MM_HAR=[64,0,64,0,64,0,60,64,67,0,0,0,59,0,0,0,60,0,59,0,57,0,0,0,62,0,64,0,65,62,59,0];
+let mStep=0,mNext=0,mI=0;
+function mDrumHit(t,f0,f1,d,v,type){
+  const o=ac.createOscillator(),g=ac.createGain();
+  o.type=type||'square';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+d);
+  g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0008,t+d);
+  o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d+.02);
+}
+function musTarget(){
+  if(state!=='play'||!P)return 0;
+  let t;
+  if(gameMode==='blitz')t=1-modeT/90;
+  else if(isCampaign)t=campLevel/Math.max(1,CAMP().length-1);
+  else t=Math.min(1,wave/14);
+  if(enemies.some(e=>e.t===4))t+=.35;
+  if(P.hp<=1)t+=.15;
+  return Math.max(0,Math.min(1,t));
+}
+function musTick2(){
+  if(muted||!musOn||!ac||ac.state!=='running')return;
+  const play=state==='play',battle=play||state==='pause';
+  mI+=(musTarget()-mI)*.03;
+  const bpm=battle?96+mI*52:120,sd=60/bpm/4,now=ac.currentTime;
+  if(mNext<now)mNext=now+.05;
+  while(mNext<now+.25){
+    const s=mStep%32,t=mNext;
+    if(!battle){
+      /* menu theme */
+      const m=MM_MEL[s];if(m)musTone(t,MFQ(m),sd*.9,'square',.035);
+      const b=MM_BASS[s];if(b)musTone(t,MFQ(b),sd*1.8,'triangle',.07);
+      if(s%4===0&&MM_HAR[s])musTone(t,MFQ(MM_HAR[s]),sd*1.2,'square',.012);
+    }else{
+      /* battle: calm at the start, intense toward the end */
+      const m=MM_MEL[s];
+      if(m)musTone(t,MFQ(mI>.6?m+12:m),sd*.9,'square',.02+mI*.025);
+      if(mI>.5&&s%4===0&&MM_HAR[s])musTone(t,MFQ(MM_HAR[s]),sd*1.2,'square',.012+mI*.01);
+      const root=MM_BASS[s-s%4];
+      if(mI>.15&&s%(mI>.5?2:4)===0)musTone(t,MFQ(root),sd*(mI>.5?1.6:3),'triangle',.05+mI*.05);
+      if(mI>.35&&s%8===0)mDrumHit(t,140,40,.12,.09+mI*.05,'triangle');
+      if(mI>.35&&s%8===4)mDrumHit(t,2000,600,.05,.03+mI*.03,'square');
+      if(mI>.6&&s%2===1)mDrumHit(t,4000,3000,.02,.012,'square');
+    }
+    mNext+=sd;mStep++;
+  }
+}
+setInterval(musTick2,60);
 ['pointerdown','keydown'].forEach(ev=>addEventListener(ev,()=>{try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}},{passive:true}));
 
 /* ---------- weekly challenge ---------- */
