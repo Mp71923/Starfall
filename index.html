@@ -498,7 +498,7 @@ const MODES=[
 {id:'season',name:'ALIEN INVASION',ic:'👽',col:'#80ffdb',rule:'Co-op · 7 days',desc:'A new invasion mission every day. Hold the line with a friend.'},
 {id:'carrier',name:'CARRIER BATTLE',ic:'🛳️',col:'#4cc9f0',rule:'Co-op · 15 min',desc:'Protect the carrier with a friend. Every squadron you destroy repairs it.'}
 ];
-let modeScroll=0,modeDrag=null;const MODE_MAX=300;
+let modeScroll=0,modeDrag=null;const MODE_MAX=Math.max(300,84+Math.ceil(MODES.length/2)*100-500);
 const modeCard=i=>({x:16+(i%2)*232,y:84+Math.floor(i/2)*100-modeScroll,w:216,h:96});
 function modeEnsure(){const top=84+Math.floor(modeSel/2)*100;if(top-modeScroll<70)modeScroll=top-70;if(top+96-modeScroll>H-48)modeScroll=top+96-(H-48);modeScroll=clamp(modeScroll,0,MODE_MAX)}
 function modesTap(p){
