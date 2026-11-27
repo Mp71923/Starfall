@@ -3174,7 +3174,7 @@ function vsDraw(){
     if(d.id==='d10')for(let k=0;k<4;k++){const by=y+40+((time*40+k*25)%70);rr(x-6,by,12,10,2);ctx.fillStyle='#e4002b';ctx.fill()}
   });
 }
-function netUi(){const b=$('onBtn');if(b)b.hidden=state==='play'||state==='pause'||state==='over'||state==='login'}
+function netUi(){const b=$('onBtn');if(b)b.hidden=state==='play'||state==='pause'||state==='over'||state==='login'||state==='modes'}
 function netInit(){
   $('onBtn').addEventListener('click',()=>{$('online').hidden=false;netMsg(NET.ok?'Connected.':'Create a game, or enter a code to join.')});
   $('onCreate').addEventListener('click',netCreate);
@@ -3199,7 +3199,7 @@ function startMode(id){
 }
 function drawModes(){
   ctx.fillStyle='rgba(5,6,15,.55)';ctx.fillRect(0,0,W,H);
-  ctx.save();ctx.beginPath();ctx.rect(0,64,W,H-108);ctx.clip();
+  ctx.save();ctx.beginPath();ctx.rect(0,64,W,528);ctx.clip();
   MODES.forEach((m,i)=>{
     const r=modeCard(i),sel=i===modeSel,cur=m.id===gameMode;
     ctx.save();if(sel){ctx.shadowColor=m.col;ctx.shadowBlur=16}
@@ -3213,12 +3213,12 @@ function drawModes(){
     text(m.id==='campaign'?Math.min(campaignProg,CAMPAIGN.length)+'/'+CAMPAIGN.length+' missions':m.id==='story'?Math.min(storyProg,STORY.length)+'/'+STORY.length+' chapters':m.id==='trial'?JTRIALS.filter(d=>(hq.tc||{})[d.id]===2).length+'/'+JTRIALS.length+' jets claimed':'BEST '+(modeBest[m.id]||0).toLocaleString(),r.x+14,r.y+r.h-7,12,'#ffd166','left','700');
     if(cur)text('● LAST',r.x+r.w-12,r.y+16,10,'#80ffdb','right','700');
   });
-  drawSpdRow();
   ctx.restore();
+  drawSpdRow();
   btn(hb.back,'← BACK','#8fb4ff',null,15);
   text('GAME MODES',W/2,32,26,'#fff');text('🪙 '+bank.toLocaleString(),W-16,32,16,'#ffd166','right');
-  const th=Math.max(30,(H-108)*(H-108)/(H-108+MODE_MAX));
-  rr(W-7,64+(H-108-th)*(modeScroll/MODE_MAX),4,th,2);ctx.fillStyle='rgba(143,180,255,.45)';ctx.fill();
+  const th=Math.max(30,528*528/(528+MODE_MAX));
+  rr(W-7,64+(528-th)*(modeScroll/MODE_MAX),4,th,2);ctx.fillStyle='rgba(143,180,255,.45)';ctx.fill();
   text(modeScroll<MODE_MAX-2?'▼ scroll down for more (Trials)  ·  wheel or drag':'tap a mode to play  ·  arrows + Enter',W/2,H-30,12,'#8aa','center','500');
 }
 function drawModesOld(){
@@ -3299,13 +3299,13 @@ function frame(t){
 /* ---------- game speed ---------- */
 const SPEEDS=[1,1.5,2,3];
 let gameSpd=1;
-const spdBtn=i=>({x:16+i*114,y:714-modeScroll,w:106,h:38});
+const spdBtn=i=>({x:16+i*114,y:612,w:106,h:36});
 const spdHud={x:W-74,y:58,w:58,h:24};
 function spdBonus(){return(isCampaign||state!=='play')?1:1+(gameSpd-1)*.5}
 function spdSet(v){gameSpd=v;saveAll();sfx('tick',560+v*80,.06,'triangle',.04);say('Speed '+v+'x')}
 function spdCycle(){spdSet(SPEEDS[(SPEEDS.indexOf(gameSpd)+1)%SPEEDS.length])}
 function drawSpdRow(){
-  const o=698-modeScroll;
+  const o=602;
   text('GAME SPEED',16,o,11,'#8fb4ff','left','700');
   text(gameSpd>1?'+'+Math.round((gameSpd-1)*50)+'% score and coins · not in Campaign':'Faster games pay more · press Z to change',W-16,o,10,gameSpd>1?'#80ffdb':'#8aa','right','600');
   SPEEDS.forEach((v,i)=>{const r=spdBtn(i),on=v===gameSpd,c=on?'#ffd166':'#8fb4ff';
