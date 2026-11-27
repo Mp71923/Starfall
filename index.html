@@ -492,9 +492,13 @@ const MODES=[
   {id:'dogfight',name:'DOGFIGHT',ic:'✈️', col:'#d4a373',rule:'WW1 squadrons',desc:'Biplane squadrons and balloons. An ace pilot every 3rd wave.'},
   {id:'protect',name:'PROTECT',ic:'🌍',col:'#4ade80',rule:'Save the planet',desc:'Aliens dive at Earth. Hold the line.'},
   {id:'coop',name:'LOCAL CO-OP',ic:'👥',col:'#80ffdb',rule:'2 players, 1 device',desc:'Fly together on one device. P1: WASD + Space bomb. P2: arrows + Enter bomb. Touch: left and right halves.'},
-  {id:'trial',name:'TRIALS',ic:'🏆',col:'#f4c430',rule:'Earn jets',desc:'Brutal challenges. Clear them, then claim exclusive trial jets.'}
+  {id:'trial',name:'TRIALS',ic:'🏆',col:'#f4c430',rule:'Earn jets',desc:'Brutal challenges. Clear them, then claim exclusive trial jets.'},
+  {id:'meteor',name:'METEOR STORM',ic:'☄️',col:'#ff9f1c',rule:'Shoot them down',desc:'Giant meteors rain down. Shoot them before they hit your base.'},
+{id:'siege',name:'CAMPAIGN SIEGE',ic:'🏰',col:'#8fb4ff',rule:'Co-op · 20 min',desc:'Hold the city with a friend for 20 minutes. Enemies that get through wear it down.'},
+{id:'season',name:'ALIEN INVASION',ic:'👽',col:'#80ffdb',rule:'Co-op · 7 days',desc:'A new invasion mission every day. Hold the line with a friend.'},
+{id:'carrier',name:'CARRIER BATTLE',ic:'🛳️',col:'#4cc9f0',rule:'Co-op · 15 min',desc:'Protect the carrier with a friend. Every squadron you destroy repairs it.'}
 ];
-let modeScroll=0,modeDrag=null;const MODE_MAX=80;
+let modeScroll=0,modeDrag=null;const MODE_MAX=300;
 const modeCard=i=>({x:16+(i%2)*232,y:84+Math.floor(i/2)*100-modeScroll,w:216,h:96});
 function modeEnsure(){const top=84+Math.floor(modeSel/2)*100;if(top-modeScroll<70)modeScroll=top-70;if(top+96-modeScroll>H-48)modeScroll=top+96-(H-48);modeScroll=clamp(modeScroll,0,MODE_MAX)}
 function modesTap(p){
@@ -572,7 +576,7 @@ let tamperMsg=false;
 function writeSave(k,raw){try{localStorage.setItem('starfall_save_'+k,raw);localStorage.setItem('starfall_sig_'+k,sigOf(k,raw))}catch(e){}}
 let lastSave=0,asvT=0;
 function flashSaved(){lastSave=Date.now();const a=document.getElementById('asv');if(!a)return;a.classList.add('on');clearTimeout(asvT);asvT=setTimeout(()=>a.classList.remove('on'),1400)}
-function saveAll(){if(!pkey)return;if(!isDev)stats.topbank=Math.max(stats.topbank||0,bank);modeBest[gameMode]=Math.max(modeBest[gameMode]||0,best);cloud.dirty=true;try{writeSave(pkey,JSON.stringify({ts:Date.now(),bank:isDev?999999999:bank,owned,stars:jetStars,evo:jetEvo,dup:jetDup,cu:CUST,sel:jetSel,traits:Object.keys(tOwn).filter(k=>tOwn[k]),got:got.slice(-300),hist,camp:campaignProg,sp:storyProg,pe:pityEpic,pl:pityLeg,xp:pxp,lv:plvl,dday:dailyDay,dq:dailyQ,ach,stats,mb:modeBest,gm:gameMode,spd:gameSpd,hq:hqSave(),hqdef:{def:hq.def||{},defEq:hq.defEq||[]}}))}catch(e){}}
+function saveAll(){if(!pkey)return;if(!isDev)stats.topbank=Math.max(stats.topbank||0,bank);modeBest[gameMode]=Math.max(modeBest[gameMode]||0,best);cloud.dirty=true;try{writeSave(pkey,JSON.stringify({ts:Date.now(),bank:isDev?999999999:bank,owned,stars:jetStars,evo:jetEvo,dup:jetDup,cu:CUST,sel:jetSel,traits:Object.keys(tOwn).filter(k=>tOwn[k]),got:got.slice(-300),hist,camp:campaignProg,sp:storyProg,pe:pityEpic,pl:pityLeg,xp:pxp,lv:plvl,dday:dailyDay,dq:dailyQ,ach,stats,mb:modeBest,gm:gameMode,spd:gameSpd,hq:hqSave(),hqdef:{def:hq.def||{},defEq:hq.defEq||[]},season:{done:SEASON.done}}))}catch(e){}}
 function checkAch(){
   const vals={kills:stats.kills,maxwave:stats.maxwave,packs:stats.packs,stars:jetStars.reduce((a,b)=>a+(b|0),0),camp:campaignProg,plvl:plvl,bank:bank,
     mythic:stats.mythic,mach:stats.mach,decoys:stats.decoys,sunk:stats.sunk,bases:stats.bases,coop:stats.coop,jets:owned.filter((o,i)=>o&&!JETS[i].story).length};
@@ -2099,7 +2103,9 @@ function advanceStory(){if(storyNext){const fn=storyNext;storyNext=null;fn()}}
 
 function nextWave(){
   if(isCampaign)return;
+  if(NCO.on&&NET.role==='guest')return;
   if(gameMode==='protect')return;
+  if(gameMode==='meteor'){wave++;queue=[];waveClock=0;banner='☄ METEOR SHOWER '+wave;bannerT=2;const n=Math.min(30,8+wave*2),gap=Math.max(.35,1.1-wave*.04);for(let i=0;i<n;i++)queue.push({t:i*gap,type:0,x:R(40,W-40)});return}
   if(gameMode==='endless'&&wave+1===50&&!civ.done){state='civ';civSel=0;return} // civilisation map before wave 50
   if(gameMode==='hq'){hqNextWave();return}
   if(gameMode==='bossrush'){wave++;queue=[{t:1,type:4,x:W/2}];waveClock=0;banner='⚠ BOSS '+wave+' ⚠';bannerT=2.2;return}
@@ -2162,6 +2168,8 @@ function spawn(type,x){
   if(type===4&&bossKills>0){const f=Math.pow(1.5,Math.min(bossKills,20));e.hp=e.max=Math.round(e.hp*f);e.bsc=f;setTimeout(()=>{if(state==='play')float(W/2,H*.38,'BOSS +'+Math.round((f-1)*100)+'% STRONGER','#ff6b6b')},300)}
   if(type>=5)extSpawn(e,type);
   if(type<4||type===5||type===6||type===7)e.pv=storyActive||ww1On()||ww2On()?0:(Math.random()<.2?0:1+Math.floor(Math.random()*(EPAL.length-1)));
+  if(gameMode==='meteor'&&type===0){e.meteor=1;e.hp=e.max=3+Math.floor(wave/3);e.r=26;e.vy=R(60,90)+wave*2;e.score=150}
+  e.id=++netSeq;
   enemies.push(e);
 }
 
@@ -2205,6 +2213,7 @@ function hurtPlayer(){
   else if(P.hp<=0){P.dead=true;slowT=.8;ring(P.x,P.y,'#ffffff',260,.9,8);ring(P.x,P.y,'#ff9a3c',170,.7,6);burst(P.x,P.y,'#ffffff',60,420,1.1);burst(P.x,P.y,'#ff9a3c',50,320,1);shake=26;sfx('die',120,1,'sawtooth',.15,-90)}
 }
 function kill(e){
+  if(NCO.siege&&SIEGE.kind==='carrier'&&NET.role==='host'&&!SIEGE.over)SIEGE.hp=Math.min(SIEGE.max,SIEGE.hp+3);
   if(NC.on&&NC.host&&NC.partner&&e.id)NC.ev.push(['k',e.id,r3(e.x/W),r3(e.y/H),e.t]);
   if(VS.on)netSendEnemy(e.t);
   burst(e.x,e.y,e.t===4?'#ff7a5c':'#ffb347',e.t===4?90:18,e.t===4?420:230,e.t===4?1.2:.6);
@@ -2292,7 +2301,7 @@ function playerAlive(dt,two){
 }
 function update(dt){
   if(state==='cmap'){time+=dt;netUi();netUpdate(dt);cmUpdate(dt);return}
-  time+=dt;hqTick(dt);netUi();netUpdate(dt);
+  time+=dt;hqTick(dt);netUi();netUpdate(dt);netCoopUpdate(dt);
   for(const s of stars){s.y+=s.v*dt*(state==='play'?1:.4);if(s.y>H){s.y=-2;s.x=R(0,W)}}
   for(const p of parts){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.985;p.vy*=.985;p.life-=dt}
   parts=parts.filter(p=>p.life>0);
@@ -2396,6 +2405,7 @@ function update(dt){
       }
     }
   }
+  for(const m of enemies)if(m.meteor&&!m.missed&&m.y>H+20){m.missed=1;if(gameMode==='meteor')hurtPlayer()}
   enemies=enemies.filter(e=>e.y<H+60);
 
   /* bullets */
@@ -2551,7 +2561,18 @@ function drawPlayer(){
   }
   ctx.restore();
 }
+function drawMeteor(e){
+  ctx.save();ctx.translate(e.x,e.y);ctx.rotate(time*1.5+e.x);
+  ctx.shadowColor='#ff9f1c';ctx.shadowBlur=14;ctx.beginPath();
+  for(let i=0;i<9;i++){const a=i/9*6.283,rr_=e.r*(.82+.18*((i*7)%3)/2);ctx.lineTo(Math.cos(a)*rr_,Math.sin(a)*rr_)}
+  ctx.closePath();ctx.fillStyle=e.flash>0?'#ffffff':'#5a4632';ctx.fill();ctx.lineWidth=2;ctx.strokeStyle='#ff9f1c';ctx.stroke();
+  ctx.fillStyle='#3a2a1c';ctx.beginPath();ctx.arc(-e.r*.3,-e.r*.2,e.r*.22,0,6.283);ctx.arc(e.r*.25,e.r*.25,e.r*.15,0,6.283);ctx.fill();
+  ctx.restore();
+  ctx.save();ctx.globalAlpha=.5;ctx.fillStyle='#ff9f1c';ctx.beginPath();ctx.moveTo(e.x-e.r*.6,e.y-e.r*.5);ctx.lineTo(e.x,e.y-e.r*2.4);ctx.lineTo(e.x+e.r*.6,e.y-e.r*.5);ctx.closePath();ctx.fill();ctx.restore();
+  if(e.hp<e.max){ctx.fillStyle='rgba(255,255,255,.2)';ctx.fillRect(e.x-e.r,e.y-e.r-8,e.r*2,4);ctx.fillStyle='#ff9f1c';ctx.fillRect(e.x-e.r,e.y-e.r-8,e.r*2*Math.max(0,e.hp/e.max),4)}
+}
 function drawEnemy(e){
+  if(e.meteor){drawMeteor(e);return}
   if(e.t>=5){extDrawEnemy(e);return}
   ctx.save();ctx.translate(e.x,e.y);
   const hit=e.flash>0;
@@ -2632,7 +2653,7 @@ function draw(){
   ctx.globalAlpha=1;
 
   if(state==='play'||state==='pause'||state==='over'){
-    pups.forEach(drawPU);coins.forEach(drawCoin);netDraw();vsDraw();
+    pups.forEach(drawPU);coins.forEach(drawCoin);netDraw();vsDraw();siegeDraw();
     if(state==='play'){
       for(const q of queue){
         const rem=q.t-waveClock;if(rem>.9)break;
@@ -2956,6 +2977,116 @@ function drawHUD(){
 }
 
 /* ---------- menu decoration: nebula, planet, sparkles, shooting stars, frame ---------- */
+/* ---------- CO-OP (step 1: the host runs the waves, the guest sees the same enemies) ---------- */
+const NCO={on:false,snapT:0,lastN:-1,listeners:[],sent:{}};
+let netSeq=0;
+function netCoopStop(){
+  for(const [q,ev,f] of NCO.listeners){try{q.off(ev,f)}catch(e){}}
+  NCO.listeners=[];NCO.on=false;
+}
+function netCoopStart(){
+  if(!NET.ok||!NET.ref||!NET.role){netMsg('Connect to a player first.');return}
+  $('online').hidden=true;
+  netCoopStop();
+  NCO.siege=false;NCO.on=true;NCO.lastN=-1;NCO.snapT=0;
+  if(NET.role==='guest'){
+    const q=NET.ref.child('snap');const f=s=>{NCO.snap=s.val()};
+    q.on('value',f);NCO.listeners.push([q,'value',f]);
+  }else{
+    const q=NET.ref.child('coophits');
+    const f=s=>{const v=s.val();if(v){const e=enemies.find(x=>x.id===v.id);if(e&&!e.dead){e.hp-=(+v.d||0);if(e.hp<=0){e.hp=0;e.dead=true;kill(e)}}}s.ref.remove()};
+    q.on('child_added',f);NCO.listeners.push([q,'child_added',f]);
+  }
+  startMode('endless');
+  banner='👥 CO-OP: fight the waves together';bannerT=3;
+  netMsg('Co-op started.');
+}
+function netCoopUpdate(dt){
+  if(!NCO.on||!NET.ref||!NET.role)return;
+  if(NET.role==='host'){
+    siegeUpdate(dt);
+    NCO.snapT-=dt;
+    if(NCO.snapT<=0){NCO.snapT=.1;
+      if(NCO.siege)NET.ref.child('siege').set({hp:Math.round(SIEGE.hp),left:Math.ceil(SIEGE.left)});
+      NET.ref.child('snap').set({n:Date.now(),e:enemies.slice(0,80).map(e=>({id:e.id,t:e.t,x:Math.round(e.x),y:Math.round(e.y),hp:Math.ceil(e.hp),max:e.max,r:e.r,m:e.meteor?1:0}))});
+    }
+  }else{
+    for(const o of enemies){if(o.id==null)continue;const sent=NCO.sent[o.id];const base=sent==null?o.max:sent;
+      if(o.hp<base){NET.ref.child('coophits').push({id:o.id,d:+(base-o.hp).toFixed(2)});NCO.sent[o.id]=o.hp}}
+    const s=NCO.snap;
+    if(s&&s.e&&s.n!==NCO.lastN){
+      NCO.lastN=s.n;
+      enemies=s.e.map(o=>({id:o.id,t:o.t,x:o.x,y:o.y,vx:0,vy:0,hp:o.hp,max:o.max,r:o.r,age:0,fire:1,score:0,flash:0,x0:o.x,pat:0,meteor:o.m?1:0,pv:0}));
+    }
+  }
+}
+/* ---------- CARRIER BATTLE (co-op, 15 minutes, protect the carrier) ---------- */
+function carrierStart(){
+  if(!NET.ok||!NET.ref||!NET.role){$('online').hidden=false;netMsg('Carrier Battle is co-op. Create a game or join a friend first.');return}
+  siegeStart();
+  if(!NCO.siege)return;
+  SIEGE.kind='carrier';SIEGE.label='CARRIER';SIEGE.left=900;SIEGE.max=500;SIEGE.hp=500;
+  banner='🛳️ CARRIER BATTLE: protect the carrier for 15 minutes';bannerT=4;
+}
+/* ---------- ALIEN INVASION SEASON (7 days, one co-op mission each day) ---------- */
+const SEASON={done:{},cur:0};
+const SEASON_START=Date.UTC(2026,10,27); // day 1 of the season, the same for every player
+const SEASON_NAMES=['First Contact','Scouting Party','Night Raid','The Swarm','Mothership Rising','Last Stand','Final Invasion'];
+function seasonDay(){return Math.floor((Date.now()-SEASON_START)/864e5)+1}
+function seasonStart(){
+  const day=seasonDay();
+  if(!NET.ok||!NET.ref||!NET.role){$('online').hidden=false;netMsg('Alien Invasion is co-op. Create a game or join a friend first.');return}
+  if(day<1){netMsg('The season starts soon.');return}
+  if(day>7){netMsg('The season is over. Thanks for playing!');return}
+  if(SEASON.done[day]){netMsg('Day '+day+' is complete. Come back tomorrow for the next mission.');return}
+  SEASON.cur=day;
+  siegeStart();
+  if(!NCO.siege)return;
+  SIEGE.left=(3+day)*60;SIEGE.max=300+day*100;SIEGE.hp=SIEGE.max;
+  banner='👽 DAY '+day+': '+SEASON_NAMES[day-1].toUpperCase()+' · hold for '+(3+day)+' min';bannerT=4;
+}
+function seasonWin(){
+  const d=SEASON.cur;SEASON.done[d]=1;SEASON.cur=0;
+  bank+=400*d;
+  banner='🎁 DAY '+d+' COMPLETE: +'+(400*d)+' coins';bannerT=5;
+}
+/* ---------- CAMPAIGN SIEGE (co-op, 20 minutes, a shared city) ---------- */
+const SIEGE={left:1200,hp:600,max:600,over:false};
+function siegeStart(){
+  if(!NET.ok||!NET.ref||!NET.role){$('online').hidden=false;netMsg('Campaign Siege is co-op. Create a game or join a friend first.');return}
+  netCoopStart();
+  if(!NET.ok)return;
+  NCO.siege=true;SIEGE.left=1200;SIEGE.hp=SIEGE.max;SIEGE.over=false;SIEGE.kind='city';SIEGE.label='CITY';
+  if(NET.role==='guest'){
+    const q=NET.ref.child('siege');const f=s=>{const v=s.val();if(!v||SIEGE.over)return;SIEGE.hp=v.hp;SIEGE.left=v.left;
+      if(SIEGE.hp<=0)siegeEnd(false);else if(SIEGE.left<=0)siegeEnd(true)};
+    q.on('value',f);NCO.listeners.push([q,'value',f]);
+  }
+  banner='🏰 CAMPAIGN SIEGE: hold the city for 20 minutes';bannerT=4;
+}
+function siegeEnd(win){
+  if(SIEGE.over)return;
+  SIEGE.over=true;netCoopStop();
+  state='over';overT=0;
+  banner=win?'🏆 '+SIEGE.label+' HOLDS':'🔥 '+SIEGE.label+' DESTROYED';bannerT=6;
+  if(win&&SEASON.cur)seasonWin();
+  sfx('buy',700,.5,'triangle',.07,500);saveAll();
+}
+function siegeUpdate(dt){
+  if(!NCO.siege||SIEGE.over||NET.role!=='host')return;
+  SIEGE.left=Math.max(0,SIEGE.left-dt);
+  for(const e of enemies){if(!e.leaked&&e.y>H+20){e.leaked=1;SIEGE.hp-=e.t===4?80:20}}
+  if(SIEGE.hp<=0){SIEGE.hp=0;NET.ref.child('siege').set({hp:0,left:Math.ceil(SIEGE.left)});siegeEnd(false)}
+  else if(SIEGE.left<=0){siegeEnd(true)}
+}
+function siegeDraw(){
+  if(!NCO.siege||SIEGE.over)return;
+  const bw=W-40,ph=Math.max(0,SIEGE.hp/SIEGE.max);
+  rr(20,102,bw,12,6);ctx.fillStyle='rgba(255,255,255,.12)';ctx.fill();
+  rr(20,102,bw*ph,12,6);ctx.fillStyle='#8fb4ff';ctx.fill();
+  const q=Math.ceil(SIEGE.left);
+  text(SIEGE.label+'  '+Math.max(0,Math.round(SIEGE.hp))+'   ·   TIME '+Math.floor(q/60)+':'+String(q%60).padStart(2,'0'),W/2,96,11,'#cfe0ff','center','700');
+}
 const MENU_ST=new Set(['inv','coopsel','menu','trade','hangar','traits','modes','campselect','story','quests','achieve','casino','prof','trials','custom']);
 const MD_TINT={inv:[255,184,107],coopsel:[128,255,219],menu:[60,220,140],trade:[60,220,140],custom:[255,159,208],hangar:[143,180,255],traits:[180,110,255],modes:[255,140,80],campselect:[80,200,255],story:[255,200,110],quests:[90,220,150],achieve:[255,210,90],casino:[255,80,140],prof:[143,180,255]};
 const mdStars=Array.from({length:26},(_,i)=>({x:(i*97%480),y:(i*211%720),p:i*1.7,s:1+(i%3)*.6}));
@@ -3615,6 +3746,9 @@ function drawCoopSel(){
 }
 function startMode(id){
   trialRun=false;
+  if(id==='siege'){siegeStart();return}
+  if(id==='season'){seasonStart();return}
+  if(id==='carrier'){carrierStart();return}
   if(id==='coop'){coopOpen();return}
   if(id==='trial'){state='trials';trSel=0;return}
   if(id==='hq')id='endless';
@@ -3625,7 +3759,7 @@ function startMode(id){
 }
 function drawModes(){
   ctx.fillStyle='rgba(5,6,15,.55)';ctx.fillRect(0,0,W,H);
-  ctx.save();ctx.beginPath();ctx.rect(0,64,W,H-108);ctx.clip();
+  ctx.save();ctx.beginPath();ctx.rect(0,64,W,528);ctx.clip();
   MODES.forEach((m,i)=>{
     const r=modeCard(i),sel=i===modeSel,cur=m.id===gameMode;
     ctx.save();if(sel){ctx.shadowColor=m.col;ctx.shadowBlur=16}
@@ -3639,12 +3773,12 @@ function drawModes(){
     text(m.id==='campaign'?Math.min(campaignProg,CAMPAIGN.length)+'/'+CAMPAIGN.length+' missions':m.id==='story'?Math.min(storyProg,STORY.length)+'/'+STORY.length+' chapters':m.id==='trial'?JTRIALS.filter(d=>(hq.tc||{})[d.id]===2).length+'/'+JTRIALS.length+' jets claimed':'BEST '+(modeBest[m.id]||0).toLocaleString(),r.x+14,r.y+r.h-7,12,'#ffd166','left','700');
     if(cur)text('● LAST',r.x+r.w-12,r.y+16,10,'#80ffdb','right','700');
   });
-  drawSpdRow();
   ctx.restore();
+  drawSpdRow();
   btn(hb.back,'← BACK','#8fb4ff',null,15);
   text('GAME MODES',W/2,32,26,'#fff');text('🪙 '+bank.toLocaleString(),W-16,32,16,'#ffd166','right');
-  const th=Math.max(30,(H-108)*(H-108)/(H-108+MODE_MAX));
-  rr(W-7,64+(H-108-th)*(modeScroll/MODE_MAX),4,th,2);ctx.fillStyle='rgba(143,180,255,.45)';ctx.fill();
+  const th=Math.max(30,528*528/(528+MODE_MAX));
+  rr(W-7,64+(528-th)*(modeScroll/MODE_MAX),4,th,2);ctx.fillStyle='rgba(143,180,255,.45)';ctx.fill();
   text(modeScroll<MODE_MAX-2?'▼ scroll down for more (Trials)  ·  wheel or drag':'tap a mode to play  ·  arrows + Enter',W/2,H-30,12,'#8aa','center','500');
 }
 function drawCampSelect(){
@@ -3705,13 +3839,13 @@ function frame(t){
 /* ---------- game speed ---------- */
 const SPEEDS=[1,1.5,2,3];
 let gameSpd=1;
-const spdBtn=i=>({x:16+i*114,y:714-modeScroll,w:106,h:38});
+const spdBtn=i=>({x:16+i*114,y:612,w:106,h:36});
 const spdHud={x:W-74,y:58,w:58,h:24};
 function spdBonus(){return(isCampaign||state!=='play')?1:1+(gameSpd-1)*.5}
 function spdSet(v){gameSpd=v;saveAll();sfx('tick',560+v*80,.06,'triangle',.04);say('Speed '+v+'x')}
 function spdCycle(){spdSet(SPEEDS[(SPEEDS.indexOf(gameSpd)+1)%SPEEDS.length])}
 function drawSpdRow(){
-  const o=698-modeScroll;
+  const o=602;
   text('GAME SPEED',16,o,11,'#8fb4ff','left','700');
   text(gameSpd>1?'+'+Math.round((gameSpd-1)*50)+'% score and coins · not in Campaign':'Faster games pay more · press Z to change',W-16,o,10,gameSpd>1?'#80ffdb':'#8aa','right','600');
   SPEEDS.forEach((v,i)=>{const r=spdBtn(i),on=v===gameSpd,c=on?'#ffd166':'#8fb4ff';
@@ -3797,7 +3931,7 @@ let hqRun=null,hqWings=[],hqRunMats={scrap:0,crystal:0,core:0},hqRegenT=0,hqOver
 const hqObj=o=>(o&&typeof o==='object'&&!Array.isArray(o))?o:{};
 function hqLoad(sv,dev){
   hq=hqBlank();
-  const s=hqObj(sv&&sv.hq);const hd=hqObj(sv&&sv.hqdef);hq.def=hqObj(hd.def);hq.defEq=Array.isArray(hd.defEq)?hd.defEq.slice(0,2):[];
+  const s=hqObj(sv&&sv.hq);const hd=hqObj(sv&&sv.hqdef);{const sn=hqObj(sv&&sv.season);SEASON.done=hqObj(sn.done)}hq.def=hqObj(hd.def);hq.defEq=Array.isArray(hd.defEq)?hd.defEq.slice(0,2):[];
   hq.nm=user;hq.pAuto=!!s.pAuto;hq.pAutoOn=!!s.pAutoOn;hq.wing=hqObj(s.wing);hq.pets=hqObj(s.pets);hq.gear=hqObj(s.gear);hq.raids=hqObj(s.raids);hq.trials=hqObj(s.trials);hq.tc=hqObj(s.tc);
   hq.squad=Array.isArray(s.squad)?s.squad.filter(id=>WINGS.some(w=>w.id===id)||/^j\d+$/.test(id)&&+id.slice(1)<JETS.length).slice(0,3):[];
   hq.pet=typeof s.pet==='string'?s.pet:'';hq.eqW=s.eqW||'';hq.eqA=s.eqA||'';
