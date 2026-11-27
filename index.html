@@ -81,7 +81,7 @@
   #tout::placeholder{font-size:13px;letter-spacing:0;font-weight:500}
   @media (prefers-reduced-motion:reduce){#login::before,#trade::before,#sv::before,#login .card,#trade .card,#sv .card,#login h1::before,#login .card::after,#trade .card::after,#sv .card::after{animation:none}}
   [hidden]{display:none!important}
-  body{background:radial-gradient(ellipse at 50% 28%,#141a4d 0%,#080a22 55%,#05060f 100%)}
+  body{background:radial-gradient(ellipse at 50% 40%,#16241c 0%,#0b1410 55%,#050809 100%)}
   #bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;display:block}
   main{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%}
   canvas:focus-visible{outline:3px solid #ffd166;outline-offset:-3px}
@@ -4675,28 +4675,40 @@ function bgDraw(dt){
   const d=Math.min(2,window.devicePixelRatio||1),w=innerWidth,h=innerHeight;
   if(bgc.width!==Math.round(w*d)||bgc.height!==Math.round(h*d)){bgc.width=Math.round(w*d);bgc.height=Math.round(h*d)}
   bgx.setTransform(d,0,0,d,0,0);
-  const g=bgx.createRadialGradient(w/2,h*.3,0,w/2,h*.3,Math.max(w,h)*.8);g.addColorStop(0,'#141a4d');g.addColorStop(.55,'#080a22');g.addColorStop(1,'#05060f');
+  const g=bgx.createRadialGradient(w/2,h*.4,0,w/2,h*.4,Math.max(w,h)*.8);g.addColorStop(0,'#16241c');g.addColorStop(.55,'#0b1410');g.addColorStop(1,'#050809');
   bgx.fillStyle=g;bgx.fillRect(0,0,w,h);
   bgT+=reduceFx?0:dt;
-  for(const s of bgS){s.y=(s.y+(reduceFx?0:dt*(.01+s.z*.05)))%1;bgx.globalAlpha=.25+s.z*.6;bgx.fillStyle='#cfe0ff';bgx.fillRect(s.x*w,s.y*h,.6+s.z*1.6,.6+s.z*1.6)}
+  /* tarmac grid */
+  bgx.strokeStyle='rgba(120,160,100,.07)';bgx.lineWidth=1;bgx.beginPath();
+  for(let x=0;x<w;x+=48){bgx.moveTo(x+.5,0);bgx.lineTo(x+.5,h)}
+  const oy=(bgT*30)%48;for(let y=-48+oy;y<h;y+=48){bgx.moveTo(0,y+.5);bgx.lineTo(w,y+.5)}
+  bgx.stroke();
+  /* runway edge lights + dashed centre line (scrolling) */
+  const off=(bgT*60)%64;
+  for(const lx of[w*.04,w*.96]){for(let y=-64+off;y<h;y+=64){bgx.fillStyle='rgba(255,230,150,.9)';bgx.shadowColor='#ffd24a';bgx.shadowBlur=10;bgx.fillRect(lx-2,y,4,10)}}
+  bgx.shadowBlur=0;
+  bgx.fillStyle='rgba(235,235,210,.10)';
+  for(const lx of[w*.17,w*.83]){for(let y=-80+(bgT*60)%80;y<h;y+=80)bgx.fillRect(lx-3,y,6,44)}
+  /* radar sweep in the bottom-left corner */
+  {const cx=0,cy=h,R=Math.min(w,h)*.5,a=bgT*1.1;bgx.save();bgx.beginPath();bgx.moveTo(cx,cy);bgx.arc(cx,cy,R,-a-.7,-a);bgx.closePath();const rg=bgx.createRadialGradient(cx,cy,0,cx,cy,R);rg.addColorStop(0,'rgba(90,255,140,.25)');rg.addColorStop(1,'rgba(90,255,140,0)');bgx.fillStyle=rg;bgx.fill();bgx.strokeStyle='rgba(90,255,140,.12)';for(let k=1;k<=3;k++){bgx.beginPath();bgx.arc(cx,cy,R*k/3,-Math.PI/2,0);bgx.stroke()}bgx.restore()}
   bgx.globalAlpha=1;
   const r=cv.getBoundingClientRect(),side=r.left;
   if(side<200)return;
   const pw=Math.min(260,side-48),L=(side-pw)/2,Rx=r.right+(side-pw)/2;
-  const panel=(x,y,hh)=>{bgx.beginPath();bgx.roundRect?bgx.roundRect(x,y,pw,hh,14):bgx.rect(x,y,pw,hh);bgx.fillStyle='rgba(10,13,40,.55)';bgx.fill();bgx.lineWidth=1;bgx.strokeStyle='rgba(143,180,255,.25)';bgx.stroke()};
+  const panel=(x,y,hh)=>{bgx.beginPath();bgx.roundRect?bgx.roundRect(x,y,pw,hh,14):bgx.rect(x,y,pw,hh);bgx.fillStyle='rgba(14,22,18,.78)';bgx.fill();bgx.lineWidth=1.5;bgx.strokeStyle='rgba(120,150,90,.55)';bgx.stroke();bgx.save();bgx.beginPath();bgx.rect(x+10,y,pw-20,6);bgx.clip();bgx.fillStyle='#f2b705';bgx.fillRect(x,y,pw,6);bgx.fillStyle='#14181a';for(let k=-12;k<pw;k+=16){bgx.beginPath();bgx.moveTo(x+k,y+6);bgx.lineTo(x+k+8,y+6);bgx.lineTo(x+k+14,y);bgx.lineTo(x+k+6,y);bgx.fill()}bgx.restore()};
   const tx=(t,x,y,sz,c,al,wt)=>{bgx.font=(wt||600)+' '+sz+'px system-ui,sans-serif';bgx.textAlign=al||'left';bgx.fillStyle=c;bgx.fillText(t,x,y)};
   const ph=Math.min(h-80,420),py=Math.max(40,(h-ph)/2);
   panel(L,py,ph);
-  tx('STARFALL',L+18,py+36,22,'#fff',0,800);
-  tx('CONTROLS',L+18,py+68,11,'#8fb4ff',0,700);
+  tx('STARFALL',L+18,py+38,22,'#ffd24a',0,800);
+  tx('FLIGHT CONTROLS',L+18,py+68,11,'#9fb27c',0,700);
   ['WASD / arrows  move','Auto-fire is on','Space / B  bomb','V  call drone','U  run shop','P / Esc  pause','F  fullscreen','M  mute','?  help'].forEach((t,i)=>tx(t,L+18,py+92+i*24,13,'#cfd8e6'));
   panel(Rx,py,ph);
   if(typeof user==='string'&&user&&state!=='login'){
     tx(user+(isDev?' ★':''),Rx+18,py+36,20,'#fff',0,800);
-    tx('LEVEL '+plvl,Rx+18,py+62,12,'#ffd166',0,700);
+    tx('LEVEL '+plvl,Rx+18,py+62,12,'#ffd24a',0,700);
     tx('🪙 '+(isDev?'∞':bank.toLocaleString()),Rx+18,py+92,16,'#ffd166',0,700);
-    tx('JET',Rx+18,py+124,11,'#8fb4ff',0,700);tx(JETS[(storyJetIdx>=0&&(state==='play'||state==='pause'||state==='over'))?storyJetIdx:jetSel].name,Rx+18,py+144,14,'#fff');
-    tx('SQUAD',Rx+18,py+178,11,'#8fb4ff',0,700);
+    tx('JET',Rx+18,py+124,11,'#9fb27c',0,700);tx(JETS[(storyJetIdx>=0&&(state==='play'||state==='pause'||state==='over'))?storyJetIdx:jetSel].name,Rx+18,py+144,14,'#fff');
+    tx('SQUAD',Rx+18,py+178,11,'#9fb27c',0,700);
     ((storyJetIdx>=0&&(state==='play'||state==='pause'||state==='over'))?STORY[campLevel].sq:hq.squad).forEach((id,i)=>{const dd=wingDef(id);if(dd)tx(dd.e,Rx+18+i*38,py+206,22,'#fff')});
     tx('RAID TOKENS  '+hq.tokens,Rx+18,py+246,13,'#ff8a9a',0,700);
     tx('BEST  '+(modeBest.endless|0).toLocaleString(),Rx+18,py+276,13,'#cfd8e6');
